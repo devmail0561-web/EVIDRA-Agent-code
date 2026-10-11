@@ -106,6 +106,12 @@ class Magasin:
         masque toujours l'état snapshotté.
         """
         self._acces[stream] = self._acces.get(stream, 0) + 1
+        if stream not in self._etats:
+            appliquer = self._appliquers.get(stream)
+            if appliquer is not None:
+                self._etats[stream] = charger(
+                    self._dossier(stream), self.flux(stream), appliquer=appliquer
+                ).etat
         for enr in reversed(self.flux(stream).relire().valides):
             if enr.cle == key:
                 if enr.op == "tombstone":
