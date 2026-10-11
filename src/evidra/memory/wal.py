@@ -76,16 +76,19 @@ class WAL:
         batch_ms: float = 1000.0,
         delai_verrou: float = 0.0,
         seq_depart: int = 0,
+        verrouiller: bool = True,
     ) -> None:
         self._chemin = chemin
         self._dossier = dossier if dossier is not None else chemin.parent
         self._batch_lignes = batch_lignes
         self._batch_ms = batch_ms
-        self._verrou = FileLock(str(self._dossier / "sa.lock"))
-        try:
-            self._verrou.acquire(timeout=delai_verrou)
-        except Timeout:
-            raise WALError(f"dossier verrouillé (deux instances ?) : {self._dossier}") from None
+        self._verrou: FileLock | None = None
+        if verrouiller:
+            self._verrou = FileLock(str(self._dossier / "sa.lock"))
+            try:
+                self._verrou.acquire(timeout=delai_verrou)
+            except Timeout:
+                raise WALError(f"dossier verrouillé (deux instances ?) : {self._dossier}") from None
         nouveau = not chemin.exists()
         self._dossier.mkdir(parents=True, exist_ok=True)
         self._fichier = open(chemin, "ab")  # noqa: SIM115 — détenu jusqu'à close()
@@ -111,12 +114,13 @@ class WAL:
         return maxi
 
     def close(self) -> None:
-        """Flush + fsync final, fermeture, libération du verrou."""
+        """Flush + fsync final, fermeture, libération du verrou (si détenu)."""
         try:
             self.sync()
         finally:
             self._fichier.close()
-            self._verrou.release()
+            if self._verrou is not None:
+                self._verrou.release()
 
     def __enter__(self) -> WAL:
         return self
