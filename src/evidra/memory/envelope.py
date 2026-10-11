@@ -133,6 +133,43 @@ def _span_texte(span: Span) -> str:
     return "s"
 
 
+def span_vers_dict(span: Span) -> Any:
+    """Span → forme dict moteur (`token_span`/`code_span`) ou `"synthetic"`."""
+    if isinstance(span, TokenSpan):
+        return {"token_span": {"start": span.debut, "end": span.fin}}
+    if isinstance(span, CodeSpan):
+        return {
+            "code_span": {
+                "file": span.fichier,
+                "line_start": span.ligne_debut,
+                "line_end": span.ligne_fin,
+            }
+        }
+    if isinstance(span, Synthetic) or span == Synthetic.SYNTHETIC.value:
+        return Synthetic.SYNTHETIC.value
+    raise ValueError(f"span inconnu : {span!r}")
+
+
+def span_depuis_dict(brut: Any) -> Span:
+    """Forme dict moteur → `Span` (inverse strict, fail-closed)."""
+    if brut == Synthetic.SYNTHETIC.value or brut == Synthetic.SYNTHETIC:
+        return Synthetic.SYNTHETIC
+    if isinstance(brut, Mapping):
+        token = brut.get("token_span")
+        if (
+            isinstance(token, Mapping)
+            and isinstance(token.get("start"), int)
+            and isinstance(token.get("end"), int)
+        ):
+            return TokenSpan(token["start"], token["end"])
+        code = brut.get("code_span")
+        if isinstance(code, Mapping) and isinstance(code.get("file"), str):
+            debut, fin = code.get("line_start"), code.get("line_end")
+            if isinstance(debut, int) and isinstance(fin, int):
+                return CodeSpan(code["file"], debut, fin)
+    raise ValueError(f"span illisible : {brut!r}")
+
+
 def cle_observation(cir: CirCore, domaine: str) -> str:
     """Dédup du rejeu : sans `extracted_at`, statut, compteurs (§6.3)."""
     p = cir.provenance
@@ -199,10 +236,12 @@ def resume(enveloppe: Envelope) -> Mapping[str, Any]:
             "negated": cir.negated,
             "provenance": {
                 "ref": p.ref,
-                "span": _span_texte(p.span),
+                "span": span_vers_dict(p.span),
                 "extraction_method": p.extraction_method,
                 "model_version": p.model_version,
                 "extracted_at": p.extracted_at,
+                "content_sha256": p.content_sha256,
+                "published_at": p.published_at,
             },
         },
         "status": enveloppe.status.value,
@@ -214,3 +253,50 @@ def resume(enveloppe: Envelope) -> Mapping[str, Any]:
         "quarantine": enveloppe.quarantine,
         "justifications": list(enveloppe.justifications),
     }
+
+
+def enveloppe_depuis_resume(d: Mapping[str, Any]) -> Envelope:
+    """Inverse strict de `resume()` : reconstitue l'enveloppe (rebuild WAL).
+
+    Lève (`KeyError`, `TypeError`, `ValueError`) sur entrée malformée —
+    l'appelant rebuild (`memoire_depuis_etat`) compte et saute (I12).
+    """
+    cir = d["cir"]
+    if not isinstance(cir, Mapping):
+        raise TypeError("resume sans bloc `cir`")
+    prov = cir["provenance"]
+    if not isinstance(prov, Mapping):
+        raise TypeError("resume sans provenance")
+    publie = prov.get("published_at")
+    quarantaine = d.get("quarantine")
+    justifs = d.get("justifications", [])
+    noyau = CirCore(
+        source=str(cir["source"]),
+        target=str(cir["target"]),
+        relation=str(cir["relation"]),
+        confidence=float(cir["confidence"]),
+        provenance=Provenance(
+            ref=str(prov["ref"]),
+            span=span_depuis_dict(prov.get("span")),
+            extraction_method=str(prov.get("extraction_method", "")),
+            model_version=str(prov.get("model_version", "")),
+            extracted_at=str(prov.get("extracted_at", "")),
+            content_sha256=str(prov.get("content_sha256", "")),
+            published_at=publie if isinstance(publie, str) else None,
+        ),
+        explicit=bool(cir.get("explicit", True)),
+        negated=bool(cir.get("negated", False)),
+    )
+    return Envelope(
+        noyau,
+        status=Statut(d.get("status", Statut.NOUVELLE.value)),
+        confirmation_count=int(d.get("confirmation_count", 0)),
+        last_confirmed_at=d.get("last_confirmed_at"),
+        source_reliability=float(d.get("source_reliability", 0.5)),
+        ingest_channel=str(d.get("ingest_channel", "")),
+        derivation=Derivation(d.get("derivation", Derivation.EXTRAITE.value)),
+        quarantine=quarantaine if isinstance(quarantaine, str) else None,
+        justifications=tuple(justifs)
+        if isinstance(justifs, list) and all(isinstance(j, str) for j in justifs)
+        else (),
+    )

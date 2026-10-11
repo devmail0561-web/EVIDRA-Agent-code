@@ -92,11 +92,13 @@ def test_snapshot_rebuild_identique(tmp_path: Path) -> None:
 
 def test_snapshot_sans_appliquer_refuse(tmp_path: Path) -> None:
     with Magasin(tmp_path) as magasin:
-        magasin.append("domains/code", _record("add", "a"))
+        magasin.append(
+            "registry/sources", Record(stream="registry/sources", op="put", key="s", data={})
+        )
         with pytest.raises(StoreError):
-            magasin.snapshot("domains/code")
+            magasin.snapshot("registry/sources")
         with pytest.raises(StoreError):
-            magasin.recharger("domains/code")
+            magasin.recharger("registry/sources")
 
 
 def test_deuxieme_magasin_refuse(tmp_path: Path) -> None:

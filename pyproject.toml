@@ -29,6 +29,7 @@ evidra = "evidra.cli:main"
 [project.entry-points."evidra_tools"]
 # un entry-point par outil (jamais de liste dans le noyau) — ex :
 # extract = "evidra.tools.extract:ExtractTool"
+ingest = "evidra.tools.ingest:OutilIngest"
 
 [project.entry-points."evidra_adapters"]
 # un entry-point par adaptateur — ex :

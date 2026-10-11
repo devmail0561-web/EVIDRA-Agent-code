@@ -22,6 +22,7 @@ from typing import Any
 from filelock import FileLock, Timeout
 
 from evidra.kernel.contracts import Record
+from evidra.memory.memoire import appliquer_domaine
 from evidra.memory.snapshot import (
     Chargement,
     charger,
@@ -98,6 +99,13 @@ class Magasin:
         self._acces[stream] = self._acces.get(stream, 0) + 1
         return self.flux(stream).append(record.op, record.key, record.data)
 
+    def _appliquer_pour(self, cle: str) -> Appliquer | None:
+        """Appliquer enregistré, sinon sémantique domaine par défaut (T3.6)."""
+        appliquer = self._appliquers.get(cle)
+        if appliquer is None and cle.startswith("domains/"):
+            appliquer = appliquer_domaine
+        return appliquer
+
     def lookup(self, stream: str, key: str) -> Record | None:
         """Dernier enregistrement pour `key` : WAL d'abord, snapshot sinon.
 
@@ -107,7 +115,7 @@ class Magasin:
         """
         self._acces[stream] = self._acces.get(stream, 0) + 1
         if stream not in self._etats:
-            appliquer = self._appliquers.get(stream)
+            appliquer = self._appliquer_pour(stream)
             if appliquer is not None:
                 self._etats[stream] = charger(
                     self._dossier(stream), self.flux(stream), appliquer=appliquer
@@ -125,7 +133,7 @@ class Magasin:
     def snapshot(self, stream: str) -> None:
         """Compaction explicite : rebuild + repli (appliquer requis)."""
         self._acces[stream] = self._acces.get(stream, 0) + 1
-        appliquer = self._appliquers.get(stream)
+        appliquer = self._appliquer_pour(stream)
         if appliquer is None:
             raise StoreError(f"snapshot sans appliquer enregistré : {stream!r}")
         charge = charger(self._dossier(stream), self.flux(stream), appliquer=appliquer)
@@ -135,7 +143,7 @@ class Magasin:
     def recharger(self, cle: str) -> Chargement:
         """Recharge un stream (démarrage, T4.5) avec son appliquer."""
         self._acces[cle] = self._acces.get(cle, 0) + 1
-        appliquer = self._appliquers.get(cle)
+        appliquer = self._appliquer_pour(cle)
         if appliquer is None:
             raise StoreError(f"rechargement sans appliquer enregistré : {cle!r}")
         charge = charger(self._dossier(cle), self.flux(cle), appliquer=appliquer)

@@ -27,6 +27,8 @@ from evidra.memory.envelope import (
     Span,
     Synthetic,
     TokenSpan,
+    span_depuis_dict,
+    span_vers_dict,
 )
 
 
@@ -68,38 +70,13 @@ def cast_span(span: Span) -> Span:
 
 
 def serialiser_span(span: Span) -> Any:
-    """Forme dict moteur (`token_span`/`code_span`) ou `"synthetic"`."""
-    if isinstance(span, TokenSpan):
-        return {"token_span": {"start": span.debut, "end": span.fin}}
-    if isinstance(span, CodeSpan):
-        return {
-            "code_span": {
-                "file": span.fichier,
-                "line_start": span.ligne_debut,
-                "line_end": span.ligne_fin,
-            }
-        }
-    return Synthetic.SYNTHETIC.value
+    """Délègue à `span_vers_dict` (référence unique côté mémoire)."""
+    return span_vers_dict(span)
 
 
 def _parse_span(brut: Any) -> Span:
-    if brut == Synthetic.SYNTHETIC.value or brut == Synthetic.SYNTHETIC:
-        return Synthetic.SYNTHETIC
-    if isinstance(brut, Mapping):
-        token = brut.get("token_span")
-        if (
-            isinstance(token, Mapping)
-            and isinstance(token.get("start"), int)
-            and isinstance(token.get("end"), int)
-        ):
-            return TokenSpan(token["start"], token["end"])
-        code = brut.get("code_span")
-        if isinstance(code, Mapping) and isinstance(code.get("file"), str):
-            debut = code.get("line_start")
-            fin = code.get("line_end")
-            if isinstance(debut, int) and isinstance(fin, int):
-                return CodeSpan(code["file"], debut, fin)
-    raise ValueError(f"span illisible : {brut!r}")
+    """Délègue à `span_depuis_dict` (référence unique côté mémoire)."""
+    return span_depuis_dict(brut)
 
 
 def verifier(cir_enrichi: Mapping[str, Any], texte: str) -> bool:
