@@ -151,8 +151,13 @@ class WAL:
         self._tampon = 0
         self._dernier_fsync = time.monotonic()
 
-    def relire(self) -> RapportRejeu:
-        """Rejoue le fichier : valides + compteurs, dernière ligne tronquée tolérée."""
+    def relire(self, *, depuis: int = 0) -> RapportRejeu:
+        """Rejoue le fichier : valides + compteurs, dernière ligne tronquée tolérée.
+
+        `depuis` = `last_seq` du snapshot : les lignes antérieures ou égales
+        sont déjà pliées (ni valides ni ignorées) ; seuls les trous et
+        doublons postérieurs sont comptés.
+        """
         self._fichier.flush()
         with open(self._chemin, "rb") as flux:
             lignes = flux.read().split(b"\n")
@@ -161,7 +166,7 @@ class WAL:
         valides: list[Enregistrement] = []
         ignores = crc_invalides = trous = 0
         tronquee = False
-        maxi = 0
+        maxi = depuis
         for i, brute in enumerate(lignes):
             dernier = i == len(lignes) - 1
             if not brute.strip():
@@ -189,6 +194,8 @@ class WAL:
             except (KeyError, TypeError, ValueError):
                 ignores += 1
                 continue
+            if seq <= depuis:
+                continue  # déjà plié dans le snapshot, ni valide ni ignoré
             if seq <= maxi:
                 ignores += 1  # déjà vu (rejeu idempotent)
                 continue

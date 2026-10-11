@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -68,6 +69,34 @@ class Chargement:
     avertissements: tuple[str, ...]
     rejouees: int
     rejeu: RapportRejeu
+    rapport: LoadReport | None = None  # T2.7 : consommé par le démarrage (T4.5)
+
+
+@dataclass(frozen=True, slots=True)
+class LoadReport:
+    """Rapport de chargement d'un stream (T2.7) : phase 2 du démarrage (T4.5)."""
+
+    stream: str
+    snapshot_loaded: bool
+    source: str
+    replayed: int
+    skipped: int
+    crc_failed: int
+    seq_gaps: int
+    duration_ms: float
+
+    def en_dict(self) -> dict[str, Any]:
+        """Rendu JSON pour le rapport de démarrage."""
+        return {
+            "stream": self.stream,
+            "snapshot_loaded": self.snapshot_loaded,
+            "source": self.source,
+            "replayed": self.replayed,
+            "skipped": self.skipped,
+            "crc_failed": self.crc_failed,
+            "seq_gaps": self.seq_gaps,
+            "duration_ms": round(self.duration_ms, 2),
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,9 +169,14 @@ def _lire_photo(chemin: Path) -> tuple[dict[str, Any], int] | None:
 
 
 def charger(
-    dossier: Path, journal: WAL, *, appliquer: Callable[[dict[str, Any], Enregistrement], None]
+    dossier: Path,
+    journal: WAL,
+    *,
+    appliquer: Callable[[dict[str, Any], Enregistrement], None],
+    stream: str = "",
 ) -> Chargement:
     """Snapshot (ou `.prev`, ou vide) + rejeu des `seq > last_seq`."""
+    debut = time.monotonic()
     avertissements: list[str] = []
     photo = _lire_photo(dossier / NOM_SNAPSHOT)
     source = "snapshot"
@@ -155,13 +189,23 @@ def charger(
         photo = ({}, 0)
         source = "vide"
     etat, last_seq = photo
-    rejeu = journal.relire()
+    rejeu = journal.relire(depuis=last_seq)
     rejouees = 0
     for enr in rejeu.valides:
         if enr.seq > last_seq:
             appliquer(etat, enr)
             last_seq = enr.seq
             rejouees += 1
+    rapport = LoadReport(
+        stream=stream,
+        snapshot_loaded=source != "vide",
+        source=source,
+        replayed=rejouees,
+        skipped=rejeu.ignores,
+        crc_failed=rejeu.crc_invalides,
+        seq_gaps=rejeu.trous_seq,
+        duration_ms=(time.monotonic() - debut) * 1000.0,
+    )
     return Chargement(
         etat=etat,
         last_seq=last_seq,
@@ -169,6 +213,7 @@ def charger(
         avertissements=tuple(avertissements),
         rejouees=rejouees,
         rejeu=rejeu,
+        rapport=rapport,
     )
 
 

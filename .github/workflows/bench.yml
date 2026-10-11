@@ -27,6 +27,6 @@ jobs:
         working-directory: harness-gcn
         run: uv sync --group dev --frozen
 
-      - name: Benchmarks (vide avant T2.8 : exit 5 toléré)
+      - name: Benchmarks SLO P1
         working-directory: harness-gcn
-        run: uv run pytest tests/bench -q --benchmark-only 2>&1 || test $? -eq 5
+        run: uv run pytest tests/bench -q
