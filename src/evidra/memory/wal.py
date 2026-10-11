@@ -75,6 +75,7 @@ class WAL:
         batch_lignes: int = 100,
         batch_ms: float = 1000.0,
         delai_verrou: float = 0.0,
+        seq_depart: int = 0,
     ) -> None:
         self._chemin = chemin
         self._dossier = dossier if dossier is not None else chemin.parent
@@ -90,9 +91,24 @@ class WAL:
         self._fichier = open(chemin, "ab")  # noqa: SIM115 — détenu jusqu'à close()
         if nouveau:
             self._fsync_dossier()
-        self._seq = 0
+        self._seq = max(self._seq_initial(), seq_depart)
         self._tampon = 0
         self._dernier_fsync = time.monotonic()
+
+    def _seq_initial(self) -> int:
+        """Reprend au max des `seq` déjà présents (toujours tolérant)."""
+        maxi = 0
+        try:
+            with open(self._chemin, "rb") as flux:
+                for brute in flux.read().split(b"\n"):
+                    try:
+                        seq = int(json.loads(brute.decode("utf-8"))["seq"])
+                    except (UnicodeDecodeError, ValueError, KeyError, TypeError):
+                        continue
+                    maxi = max(maxi, seq)
+        except OSError:
+            pass
+        return maxi
 
     def close(self) -> None:
         """Flush + fsync final, fermeture, libération du verrou."""
