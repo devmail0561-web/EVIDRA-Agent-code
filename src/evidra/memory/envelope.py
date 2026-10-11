@@ -89,6 +89,8 @@ class CirCore:
     relation: str
     confidence: float
     provenance: Provenance
+    explicit: bool = True
+    negated: bool = False
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.confidence <= 1.0:
@@ -193,6 +195,8 @@ def resume(enveloppe: Envelope) -> Mapping[str, Any]:
             "target": cir.target,
             "relation": cir.relation,
             "confidence": cir.confidence,
+            "explicit": cir.explicit,
+            "negated": cir.negated,
             "provenance": {
                 "ref": p.ref,
                 "span": _span_texte(p.span),
