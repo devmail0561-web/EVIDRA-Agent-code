@@ -1,0 +1,21 @@
+[importlinter]
+root_package = evidra
+include_external_packages = True
+
+[importlinter:contract:engine-boundary]
+name = Seul evidra.engine_bridge importe le moteur (I1)
+type = forbidden
+source_modules =
+    evidra.kernel
+    evidra.memory
+    evidra.directive
+    evidra.tools
+    evidra.adapters
+    evidra.security
+    evidra.monitor
+    evidra.output
+    evidra.api
+    evidra.boot
+forbidden_modules =
+    gcn_python
+    gcn

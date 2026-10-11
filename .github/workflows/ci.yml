@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout SA
+        uses: actions/checkout@v4
+        with:
+          path: harness-gcn
+
+      - name: Checkout moteur (pinné, cf. docs/engine-compat.md)
+        uses: actions/checkout@v4
+        with:
+          repository: devmail0561-web/gcn_engine
+          ref: 20163daea57c0da065e22aa2cdb179ab69ba194a
+          path: projet_CNM
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dépendances
+        working-directory: harness-gcn
+        run: uv sync --group dev --frozen
+
+      - name: Ruff (lint)
+        working-directory: harness-gcn
+        run: uv run ruff check src tests scripts
+
+      - name: Ruff (format)
+        working-directory: harness-gcn
+        run: uv run ruff format --check src tests scripts
+
+      - name: Mypy strict (kernel, memory)
+        working-directory: harness-gcn
+        run: uv run mypy src/evidra/kernel src/evidra/memory
+
+      - name: Garde I1 (import-linter)
+        working-directory: harness-gcn
+        run: uv run lint-imports
+
+      - name: Tests + couverture
+        working-directory: harness-gcn
+        run: uv run pytest -q --cov=evidra --cov-report=term-missing

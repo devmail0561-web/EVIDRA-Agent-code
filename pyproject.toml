@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "evidra"
+version = "0.1.0"
+description = "Evidra (SA) — agent causal autonome : harness + mémoire + boucle, moteur GCN en dépendance externe"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{name = "Michel Tendeng"}]
+dependencies = ["gcn-python", "filelock", "pydantic>=2"]
+
+[project.optional-dependencies]
+api = ["fastapi", "uvicorn"]
+network = ["httpx", "feedparser"]
+crypto = ["cryptography"]
+
+[dependency-groups]
+dev = ["pytest", "hypothesis", "pytest-benchmark", "pytest-socket",
+       "pytest-cov", "ruff", "mypy", "import-linter"]
+
+[tool.uv.sources]
+gcn-python = {path = "../projet_CNM/gcn-python", editable = true}
+
+[project.scripts]
+evidra = "evidra.cli:main"
+
+[project.entry-points."evidra_tools"]
+# un entry-point par outil (jamais de liste dans le noyau) — ex :
+# extract = "evidra.tools.extract:ExtractTool"
+
+[project.entry-points."evidra_adapters"]
+# un entry-point par adaptateur — ex :
+# local_files = "evidra.adapters.local_files:LocalFilesAdapter"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/evidra"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["evidra.kernel", "evidra.memory"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

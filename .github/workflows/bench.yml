@@ -1,0 +1,32 @@
+name: Bench (SLO)
+
+# Mesures de latence (pytest-benchmark). Manuel jusqu'en T2.8.
+on:
+  workflow_dispatch:
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout SA
+        uses: actions/checkout@v4
+        with:
+          path: harness-gcn
+
+      - name: Checkout moteur (pinné, cf. docs/engine-compat.md)
+        uses: actions/checkout@v4
+        with:
+          repository: devmail0561-web/gcn_engine
+          ref: 20163daea57c0da065e22aa2cdb179ab69ba194a
+          path: projet_CNM
+
+      - name: Installer uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dépendances
+        working-directory: harness-gcn
+        run: uv sync --group dev --frozen
+
+      - name: Benchmarks (vide avant T2.8 : exit 5 toléré)
+        working-directory: harness-gcn
+        run: uv run pytest tests/bench -q --benchmark-only 2>&1 || test $? -eq 5
