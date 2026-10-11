@@ -61,81 +61,86 @@ def parse_version(text: str) -> tuple[int, ...] | None:
     return tuple(int(part) for part in text.split("."))
 
 
+def _ko(motif: str) -> ManifestError:
+    return ManifestError(f"manifeste : {motif}")
+
+
 def _exige_str(data: Mapping[str, Any], champ: str, *, non_vide: bool = True) -> str:
     valeur = data.get(champ)
     if not isinstance(valeur, str) or (non_vide and not valeur):
-        raise ManifestError(f"manifeste invalide : {champ!r} doit être une chaîne non vide")
+        raise _ko(f"{champ!r} : chaîne non vide exigée")
     return valeur
 
 
 def _permissions(data: Mapping[str, Any]) -> frozenset[Permission]:
     brutes = data.get("permissions")
     if not isinstance(brutes, (list, tuple)) or not brutes:
-        raise ManifestError("manifeste invalide : 'permissions' doit être une liste non vide")
+        raise _ko("'permissions' : liste non vide exigée")
     permissions: set[Permission] = set()
     for i, brute in enumerate(brutes):
         if not isinstance(brute, Mapping):
-            raise ManifestError(f"manifeste invalide : permissions[{i}] doit être un objet")
+            raise _ko(f"permissions[{i}] : objet exigé")
         verbe = brute.get("verb")
         if not isinstance(verbe, str):
-            raise ManifestError(f"manifeste invalide : permissions[{i}].verb doit être une chaîne")
+            raise _ko(f"permissions[{i}].verb : chaîne exigée")
         try:
             verb = Verb(verbe)
         except ValueError:
-            raise ManifestError(
-                f"manifeste invalide : permissions[{i}].verb {verbe!r} inconnu"
-            ) from None
+            raise _ko(f"permissions[{i}].verb {verbe!r} inconnu") from None
         scope = brute.get("scope")
         if not isinstance(scope, str) or not scope:
-            raise ManifestError(f"manifeste invalide : permissions[{i}].scope doit être non vide")
+            raise _ko(f"permissions[{i}].scope : non vide exigé")
         permissions.add(Permission(verb=verb, scope=scope))
     return frozenset(permissions)
+
+
+def _canaux(data: Mapping[str, Any]) -> tuple[str, ...]:
+    canaux = data.get("channels")
+    if (
+        isinstance(canaux, (list, tuple))
+        and canaux
+        and all(isinstance(c, str) and c for c in canaux)
+    ):
+        return tuple(canaux)
+    raise _ko("'channels' : liste non vide exigée")
+
+
+def _cout(data: Mapping[str, Any]) -> CostHint:
+    cout = data.get("cost_hint")
+    if isinstance(cout, Mapping):
+        try:
+            return CostHint(ms=float(cout.get("ms", 0.0)), calls=int(cout.get("calls", 1)))
+        except (TypeError, ValueError):
+            pass
+    raise _ko("'cost_hint' mal formé")
 
 
 def validate_manifest(data: Mapping[str, Any]) -> Manifest:
     """Valide un manifeste brut, lève `ManifestError` avec motif sinon."""
     if not isinstance(data, Mapping):
-        raise ManifestError("manifeste invalide : objet attendu")
+        raise _ko("objet attendu")
     nom = _exige_str(data, "name")
     version = _exige_str(data, "version")
     if _SEMVER.match(version) is None:
-        raise ManifestError(f"manifeste invalide : {version!r} n'est pas semver")
+        raise _ko(f"{version!r} n'est pas semver")
     requis = _exige_str(data, "harness_required")
     if parse_version(requis) is None:
-        raise ManifestError(f"manifeste invalide : harness_required {requis!r} mal formé")
-    canaux = data.get("channels")
-    if (
-        not isinstance(canaux, (list, tuple))
-        or not canaux
-        or not all(isinstance(c, str) and c for c in canaux)
-    ):
-        raise ManifestError("manifeste invalide : 'channels' doit être une liste non vide")
-    cout = data.get("cost_hint")
-    if not isinstance(cout, Mapping):
-        raise ManifestError("manifeste invalide : 'cost_hint' doit être un objet")
-    try:
-        hint = CostHint(
-            ms=float(cout.get("ms", 0.0)),
-            calls=int(cout.get("calls", 1)),
-        )
-    except (TypeError, ValueError):
-        raise ManifestError("manifeste invalide : 'cost_hint' mal formé") from None
+        raise _ko(f"harness_required {requis!r} mal formé")
     for champ in ("input_schema", "output_schema"):
         if not isinstance(data.get(champ), Mapping):
-            raise ManifestError(f"manifeste invalide : {champ!r} doit être un objet")
+            raise _ko(f"{champ!r} : objet exigé")
     reseau = data.get("requires_network")
     if not isinstance(reseau, bool):
-        raise ManifestError("manifeste invalide : 'requires_network' doit être booléen")
-    schemas = data
+        raise _ko("'requires_network' : booléen exigé")
     return Manifest(
         name=nom,
         version=version,
         harness_required=requis,
         permissions=_permissions(data),
-        channels=tuple(canaux),
-        cost_hint=hint,
-        input_schema=schemas["input_schema"],
-        output_schema=schemas["output_schema"],
+        channels=_canaux(data),
+        cost_hint=_cout(data),
+        input_schema=data["input_schema"],
+        output_schema=data["output_schema"],
         requires_network=reseau,
     )
 
@@ -143,7 +148,7 @@ def validate_manifest(data: Mapping[str, Any]) -> Manifest:
 def manifest_from_plugin(cls: object) -> Manifest:
     """Extrait et valide le manifeste déclaré en ClassVars ; refus sinon."""
     lues: dict[str, Any] = {}
-    for champ in (
+    _champs = (
         "name",
         "version",
         "harness_required",
@@ -153,11 +158,10 @@ def manifest_from_plugin(cls: object) -> Manifest:
         "input_schema",
         "output_schema",
         "requires_network",
-    ):
+    )
+    for champ in _champs:
         if not hasattr(cls, champ):
-            raise ManifestError(
-                f"manifeste invalide : {getattr(cls, '__name__', cls)!r} sans {champ!r}"
-            )
+            raise _ko(f"{getattr(cls, '__name__', cls)!r} sans {champ!r}")
         lues[champ] = getattr(cls, champ)  # noqa: B009 — présence vérifiée ci-dessus
     permissions = lues["permissions"]
     if isinstance(permissions, frozenset) and all(isinstance(p, Permission) for p in permissions):

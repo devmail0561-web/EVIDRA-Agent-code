@@ -20,24 +20,24 @@ from typing import Any, ClassVar, NewType, Protocol, runtime_checkable
 HARNESS_VERSION = "1.0"
 
 
-class Status(StrEnum):
-    """Statut d'un reçu d'exécution (§26 de l'étude)."""
-
-    OK = "ok"
-    DEGRADE = "degrade"
-    REFUSED = "refused"  # décision de la porte `can()`, pas une erreur
-    FAILED = "failed"
+Status = StrEnum(
+    "Status", {"OK": "ok", "DEGRADE": "degrade", "REFUSED": "refused", "FAILED": "failed"}
+)
+# Statut d'un reçu (§26 : `refused` = décision de la porte, pas une erreur).
 
 
-class Verb(StrEnum):
-    """Verbes de permission appliqués par le harness (§13.3)."""
-
-    READ = "read"
-    INGEST = "ingest"
-    MODIFY = "modify"
-    DELETE = "delete"
-    ALERT = "alert"
-    EGRESS = "egress"
+Verb = StrEnum(
+    "Verb",
+    {
+        "READ": "read",
+        "INGEST": "ingest",
+        "MODIFY": "modify",
+        "DELETE": "delete",
+        "ALERT": "alert",
+        "EGRESS": "egress",
+    },
+)
+# Verbes de permission appliqués par le harness (§13.3).
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,9 +46,6 @@ class Cost:
 
     ms: float = 0.0
     calls: int = 0
-
-    def __add__(self, other: Cost) -> Cost:
-        return Cost(ms=self.ms + other.ms, calls=self.calls + other.calls)
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,7 +80,7 @@ class RawDoc:
 
 
 Cursor = NewType("Cursor", str)
-"""Curseur opaque d'adaptateur (persisté via les tâches, §13.4)."""
+# Curseur opaque d'adaptateur (persisté via les tâches, §13.4).
 
 
 @dataclass(frozen=True, slots=True)

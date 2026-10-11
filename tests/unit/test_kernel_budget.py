@@ -71,6 +71,10 @@ def noms_code(path: Path) -> set[str]:
                 _couvre(body[0])
         if isinstance(node, ast.ClassDef) and node.name == "Verb":
             _couvre(node)
+        if isinstance(node, ast.Assign) and any(
+            isinstance(cible, ast.Name) and cible.id == "Verb" for cible in node.targets
+        ):
+            _couvre(node)
     found: set[str] = set()
     with tokenize.open(path) as stream:
         for tok in tokenize.generate_tokens(stream.readline):

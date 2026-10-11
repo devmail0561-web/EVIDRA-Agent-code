@@ -35,15 +35,18 @@ class RegistryError(ValueError):
     """Transition illégale ou usage fautif du registre (rattaché à T1.6)."""
 
 
-class PluginState(StrEnum):
-    """États du cycle de vie d'un plugin (ADR-0005)."""
-
-    DISCOVERED = "discovered"
-    VALIDATED = "validated"
-    ENABLED = "enabled"
-    RUNNING = "running"
-    DISABLED = "disabled"
-    QUARANTINED = "quarantined"
+PluginState = StrEnum(
+    "PluginState",
+    {
+        "DISCOVERED": "discovered",
+        "VALIDATED": "validated",
+        "ENABLED": "enabled",
+        "RUNNING": "running",
+        "DISABLED": "disabled",
+        "QUARANTINED": "quarantined",
+    },
+)
+# États du cycle de vie d'un plugin (ADR-0005).
 
 
 _TRANSITIONS: Mapping[PluginState, frozenset[PluginState]] = {
@@ -94,12 +97,11 @@ class Registry:
 
     def discover(self, points: Mapping[str, Iterable[Any]] | None = None) -> DiscoveryReport:
         """Découvre les plugins (entry-points réels, ou `points` injectés en test)."""
-        trouves: dict[str, Iterable[Any]] = {}
-        if points is None:
-            for groupe in GROUPES:
-                trouves[groupe] = importlib.metadata.entry_points(group=groupe)
-        else:
-            trouves = dict(points)
+        trouves = (
+            dict(points)
+            if points is not None
+            else {g: importlib.metadata.entry_points(group=g) for g in GROUPES}
+        )
         for groupe, entrees in trouves.items():
             for entree in entrees:
                 cle = f"{groupe}:{entree.name}"
@@ -118,11 +120,8 @@ class Registry:
             return fiche
         exigee = parse_version(manifeste.harness_required)
         if exigee is None or exigee > self._supportee:
-            _passer(
-                fiche,
-                PluginState.DISABLED,
-                f"harness {manifeste.harness_required} supérieur au supporté ({HARNESS_VERSION})",
-            )
+            motif = f"harness {manifeste.harness_required} > supporté ({HARNESS_VERSION})"
+            _passer(fiche, PluginState.DISABLED, motif)
             return fiche
         fiche.plugin_cls = plugin_cls
         _passer(fiche, PluginState.VALIDATED)
@@ -162,11 +161,8 @@ class Registry:
 
     def rapport(self) -> DiscoveryReport:
         """Liste (nom, état, motif) de toutes les fiches."""
-        return DiscoveryReport(
-            entrees=tuple(
-                (fiche.key, fiche.state.value, fiche.motif) for fiche in self._fiches.values()
-            )
-        )
+        entrees = tuple((f.key, f.state.value, f.motif) for f in self._fiches.values())
+        return DiscoveryReport(entrees=entrees)
 
     def _fiche(self, cle: str) -> PluginRecord:
         try:

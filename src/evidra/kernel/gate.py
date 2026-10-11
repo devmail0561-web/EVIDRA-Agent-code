@@ -16,7 +16,6 @@ données, jamais écrits en dur).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 from evidra.kernel.contracts import Cost, Status, ToolResult, Verb
 
@@ -81,23 +80,11 @@ def can(
     return Decision(False, f"aucune permission : {outil} {verbe.value} {scope}")
 
 
-def refuse(
-    outil: str,
-    verbe: Verb,
-    scope: str,
-    motif: str,
-    cost: Cost | None = None,
-) -> ToolResult:
+def refuse(outil: str, verbe: Verb, scope: str, motif: str, cost: Cost | None = None) -> ToolResult:
     """Construit le reçu `refused` traçable d'un refus de la porte."""
     verbe_nom = verbe.value if isinstance(verbe, Verb) else repr(verbe)
-    charge: dict[str, Any] = {
-        "outil": outil,
-        "verbe": verbe_nom,
-        "scope": scope,
-        "motif": motif,
-    }
     return ToolResult(
         status=Status.REFUSED,
-        payload=charge,
+        payload={"outil": outil, "verbe": verbe_nom, "scope": scope, "motif": motif},
         cost=cost if cost is not None else Cost(),
     )

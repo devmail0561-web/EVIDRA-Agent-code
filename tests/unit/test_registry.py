@@ -52,7 +52,7 @@ def test_harness_trop_recent_desactive_motive():
     registre.discover(_points(futur=_classe_bonne(harness_required="9.9")))
     fiche = registre.approve("evidra_tools:futur", _classe_bonne(harness_required="9.9"))
     assert fiche.state is PluginState.DISABLED
-    assert "supérieur" in fiche.motif
+    assert "supporté" in fiche.motif
 
 
 def test_manifeste_invalide_desactive_motive():
