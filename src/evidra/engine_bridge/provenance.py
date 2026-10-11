@@ -55,7 +55,7 @@ def envelopper(
         if prov.get("ref") is None:
             prov["ref"] = ref
         if spans is not None and attrs.get("marker_token") in spans:
-            prov["span"] = _serialiser(cast_span(spans[attrs["marker_token"]]))
+            prov["span"] = serialiser_span(cast_span(spans[attrs["marker_token"]]))
         prov["content_sha256"] = empreinte
     return copie
 
@@ -67,7 +67,8 @@ def cast_span(span: Span) -> Span:
     raise ValueError(f"span inconnu : {span!r}")
 
 
-def _serialiser(span: Span) -> Any:
+def serialiser_span(span: Span) -> Any:
+    """Forme dict moteur (`token_span`/`code_span`) ou `"synthetic"`."""
     if isinstance(span, TokenSpan):
         return {"token_span": {"start": span.debut, "end": span.fin}}
     if isinstance(span, CodeSpan):

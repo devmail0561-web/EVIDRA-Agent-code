@@ -123,6 +123,21 @@ class Index:
         """Ids des arêtes d'une relation."""
         return tuple(sorted(self._relations.get(relation, ())))
 
+    def sortants(self, label: str) -> tuple[str, ...]:
+        """Ids partant de `label` (exact normalisé, sans repli — BFS T3.4)."""
+        return tuple(sorted(self._depuis.get(normaliser_label(label), ())))
+
+    def entrants(self, label: str) -> tuple[str, ...]:
+        """Ids arrivant à `label` (exact normalisé, sans repli — BFS T3.4)."""
+        return tuple(sorted(self._vers.get(normaliser_label(label), ())))
+
+    def bouts(self, ident: str) -> tuple[str, str, str] | None:
+        """`(src, dst, relation)` normalisés d'une arête, `None` si absente."""
+        arete = self._aretes.get(ident)
+        if arete is None:
+            return None
+        return (arete.src, arete.dst, arete.relation)
+
     def par_tier(self, niveau: str) -> tuple[str, ...]:
         """Ids des arêtes d'un tier (`high`, `medium`, `low`)."""
         return tuple(sorted(self._tiers.get(niveau, ())))
