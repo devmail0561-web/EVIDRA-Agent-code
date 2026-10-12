@@ -33,6 +33,7 @@ ingest = "evidra.tools.ingest:OutilIngest"
 query_causes = "evidra.tools.query_causes:OutilCauses"
 query_effects = "evidra.tools.query_effects:OutilEffets"
 query_chain = "evidra.tools.query_chain:OutilChaine"
+validate = "evidra.tools.validate:OutilValider"
 
 [project.entry-points."evidra_adapters"]
 # un entry-point par adaptateur — ex :

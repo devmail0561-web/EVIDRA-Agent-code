@@ -59,6 +59,9 @@ class Memoire:
         self.vues: set[str] = set()
         self.index = Index()
         self.par_id: dict[str, Triplet] = {}  # id d'index → triplet (stable sous alias T6.5)
+        self.paires: dict[
+            tuple[str, str, str], list[Triplet]
+        ] = {}  # (domaine, src, dst) → triplets (verdicts O(1), T5.3)
 
     def observer(
         self,
@@ -100,10 +103,13 @@ class Memoire:
         return Issue("nouvelle", entite, triplet, observation)
 
     def ajouter(self, triplet: Triplet, observation: str, enveloppe: Envelope) -> None:
-        """Enregistre une entité (index + triplet + vue + id)."""
+        """Enregistre une entité (index + triplet + vue + id + paire)."""
         self.entites[triplet] = enveloppe
         self.vues.add(observation)
         self.par_id[id_triplet(triplet)] = triplet
+        paire = self.paires.setdefault((triplet[0], triplet[1], triplet[3]), [])
+        if triplet not in paire:
+            paire.append(triplet)
         cir = enveloppe.cir
         self.index.ajouter(
             id_triplet(triplet), cir.source, cir.target, cir.relation, cir.confidence
