@@ -98,7 +98,7 @@ class AdaptateurFichiers:
     ) -> None:
         self._racine = Path(racine)
         self._motifs = motifs
-        self._canal = canal
+        self.canal = canal
         self._etat: dict[str, dict[str, Any]] = {}
         self._dernier_ack: str | None = None
 
@@ -148,7 +148,7 @@ class AdaptateurFichiers:
                     RawDoc(
                         uri=chemin.absolute().as_uri(),
                         text=texte,
-                        channel=self._canal,
+                        channel=self.canal,
                         mime=MIMES.get(chemin.suffix.lower(), "text/plain"),
                         published_at=datetime.fromtimestamp(
                             meta["mtime_ns"] / 1e9, UTC

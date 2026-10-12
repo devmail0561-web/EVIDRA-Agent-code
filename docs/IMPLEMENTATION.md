@@ -1,6 +1,6 @@
 # Evidra (SA) — Journal d'implémentation (T0 → T3.6)
 
-> Exhaustif, détaillé, concis. État au 2026-10-11, commit `0198cd2`.
+> Exhaustif, détaillé, concis. État au 2026-10-12, commit `1b02592` (+ T3.8 ci-dessous, à commiter).
 > Source de conception : `ETUDE_SA.md` (30 sections). Plan : `PLAN_SA.md` (+ patchs P1–P7 appliqués).
 > Dépôt : `devmail0561-web/EVIDRA-Agent-code`, branche `main`. Moteur : `gcn-python 4.0.0` @ `20163da` (branche refacto non mergée, cf. `engine-compat.md`).
 
@@ -11,7 +11,7 @@
 | 0 — Scaffolding | J0 ✅ | T0.1–T0.7 | Vert (CI équivalent local) |
 | 1 — Noyau harness | J1 ✅ | T1.1–T1.7 | Vert : 498/500 SLOC, mypy strict, 0 dépendance noyau→mémoire/outils/moteur |
 | 2 — Mémoire | J2 ✅ | T2.1–T2.8 | Vert : crash sans perte, compaction éprouvée, index≡scan, SLO mesurés |
-| 3 — Pont moteur | J3 ⏳ | T3.1–T3.6 ✅, T3.7–T3.9 ❌ | En cours (reste : `local_files`, dogfood, tranche verticale) |
+| 3 — Pont moteur | J3 ⏳ | T3.1–T3.8 ✅, T3.9 ❌ | Reste : tranche verticale gold-219 |
 | 4–10 | — | — | Non commencées |
 
 Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **186 tests**, tous verts.
@@ -116,4 +116,9 @@ P1 (reçus : mutation seule, no-op zéro écriture) ✅ appliqué au plan (à fa
 
 ## 12. Journal des commits
 
-`3c8e00a` J0+T1.1 · `ee95532` T1.2 · `968f03e` T1.3 · `7b676a6` T1.4 · `ad11321` T1.5 · `4e6d90f` T1.6+T1.7 (J1) · `a18bef8` T2.1 · `199c9c9` T2.2+ADR-0011 · `f927ab5` T2.3 · `28cab04` T2.4 · `f1202a5` T2.5 · `6f5ad9f` T2.6 · `905d9d4` T2.7+T2.8 (J2) · `5b99c6d` T3.1 · `44ade14` T3.2 · `520d816` T3.3+T3.4 · `b958ca0` T3.5 · `0198cd2` T3.6.
+`3c8e00a` J0+T1.1 · `ee95532` T1.2 · `968f03e` T1.3 · `7b676a6` T1.4 · `ad11321` T1.5 · `4e6d90f` T1.6+T1.7 (J1) · `a18bef8` T2.1 · `199c9c9` T2.2+ADR-0011 · `f927ab5` T2.3 · `28cab04` T2.4 · `f1202a5` T2.5 · `6f5ad9f` T2.6 · `905d9d4` T2.7+T2.8 (J2) · `5b99c6d` T3.1 · `44ade14` T3.2 · `520d816` T3.3+T3.4 · `b958ca0` T3.5 · `0198cd2` T3.6 · `96af26e` docs T0→T3.6 · `1b02592` T3.7.
+
+## 13. T3.7–T3.8 (au-delà du journal T0→T3.6)
+
+- **T3.7** (`1b02592`) : `adapters/local_files.py` — poll mtime+hash+sha, globs stdlib, curseur JSON opaque (poll tolérant, ack strict), lecture STRICTEMENT seule (aucun sidecar, `.git`/caches exclus, binaire sauté), `etendue()` TokenSpan couvrant / CodeSpan fichier (grossier mais vrai ; fin au mot = T5.4), `RawDoc` réels offline. Manifest : `permissions` vides autorisées (absent refusé). Entry-point déclaré et chargeable.
+- **T3.8** (ce commit) : `directives/code.dogfood.json` (domaine `code`, seuils 0.0/ml_python justifiés B1) ; `engine_bridge/binaire.py` (résolution `GCN_BIN`/PATH/défaut dev) ; `ingestion.py` (F1 partagé : phrases → extract → ancre document → enveloppe → vérifie → ingest, absorbé en T4.4) ; `tests/offline/test_dogfood.py` (corpus fixture, lattice réelle si `gcn` présent sinon stub, I4 vérifié, offline) ; `scripts/dogfood_code.py` (run dépôt réel). **Constat décisif** : CLI `gcn` 4.0.0 présent et fonctionnel → lattice réelle + poids d'essai (structure réelle, poids bruts, B2 intact : aucun checkpoint touché). Mesure dogfood : 53 docs, 7900 phrases/CIRs, 234 entités, 185 confirmations, 6965 idempotentes (poids bruts → triplets génériques répétés, dédup conforme), 0 dropped/invalide, réponses avec `file://` citées. Labels `hidden_cause(?)` : encodeur d'essai, pas une qualité (B1, T3.9 mesure).
