@@ -88,6 +88,16 @@ class Boucle:
                 niveau, lambda n=niveau: n in self._actifs, lambda n=niveau: self._periodique(n)
             )
 
+    @property
+    def domaine(self) -> str:
+        """Domaine de la boucle (exploitant CLI)."""
+        return self._domaine
+
+    @property
+    def compteur(self) -> int:
+        """Ticks écoulés (exploitant CLI)."""
+        return self._ordonnanceur.tick
+
     def tick(self) -> RapportBoucle:
         """Un cycle complet : tiède → tâches → sélection → tour → rapport."""
         changee = self._tiede()
@@ -108,10 +118,12 @@ class Boucle:
             alertes=tuple(alertes),
         )
 
-    def boucler(self, arret: threading.Event) -> None:
-        """Boucle jusqu'au signal (T4.6 branchera les signaux)."""
+    def boucler(self, arret: threading.Event, delai: float = 0.05) -> None:
+        """Boucle jusqu'au signal (`arret.wait` : réveil immédiat, pas de spin)."""
         while not arret.is_set():
             self.tick()
+            if not arret.is_set():
+                arret.wait(delai)
 
     def _tiede(self) -> bool:
         gardien = self._surveillant

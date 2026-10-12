@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import json
+import tempfile
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -148,11 +150,34 @@ def test_outils_niveau_table() -> None:
     assert outils_niveau(Priorite.P6) == ("query_cycles", "query_gaps")
 
 
-def test_boucler_arret_propre(tmp_path: Path) -> None:
-    boucle, _mag, _reg, _ord = _montage(tmp_path)
-    arret = threading.Event()
-    arret.set()
-    fil = threading.Thread(target=boucle.boucler, args=(arret,))
-    fil.start()
-    fil.join(timeout=5.0)
-    assert not fil.is_alive()
+def test_boucler_arret_propre() -> None:
+    with tempfile.TemporaryDirectory() as tmp, Magasin(Path(tmp)) as magasin:
+        boucle = Boucle(
+            domaine="code",
+            ordonnanceur=Scheduler(),
+            magasin=magasin,
+            registres=Registres(magasin),
+            outils={},
+        )
+        arret = threading.Event()
+        arret.set()
+        fil = threading.Thread(target=boucle.boucler, args=(arret,))
+        fil.start()
+        fil.join(timeout=5.0)
+        assert not fil.is_alive()
+
+
+def test_boucle_tick_noop_rapide() -> None:
+    with tempfile.TemporaryDirectory() as tmp, Magasin(Path(tmp)) as magasin:
+        boucle = Boucle(
+            domaine="code",
+            ordonnanceur=Scheduler(),
+            magasin=magasin,
+            registres=Registres(magasin),
+            outils={},
+        )
+        debut = time.perf_counter()
+        rapport = boucle.tick()
+        duree_ms = (time.perf_counter() - debut) * 1000.0
+    assert rapport.recus == ()
+    assert duree_ms < 10.0  # T4.7 : cycle sans condition < 10 ms mesuré

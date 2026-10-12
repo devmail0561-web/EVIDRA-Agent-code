@@ -1,6 +1,6 @@
-# Evidra (SA) — Journal d'implémentation (T0 → T3.9, J3 clos)
+# Evidra (SA) — Journal d'implémentation (T0 → T4.7, J4 clos)
 
-> Exhaustif, détaillé, concis. État au 2026-10-12 (J3 clos, voir §13).
+> Exhaustif, détaillé, concis. État au 2026-10-12 (J4 clos, voir §14).
 > Source de conception : `ETUDE_SA.md` (30 sections). Plan : `PLAN_SA.md` (+ patchs P1–P7 appliqués).
 > Dépôt : `devmail0561-web/EVIDRA-Agent-code`, branche `main`. Moteur : `gcn-python 4.0.0` @ `20163da` (branche refacto non mergée, cf. `engine-compat.md`).
 
@@ -12,6 +12,7 @@
 | 1 — Noyau harness | J1 ✅ | T1.1–T1.7 | Vert : 498/500 SLOC, mypy strict, 0 dépendance noyau→mémoire/outils/moteur |
 | 2 — Mémoire | J2 ✅ | T2.1–T2.8 | Vert : crash sans perte, compaction éprouvée, index≡scan, SLO mesurés |
 | 3 — Pont moteur | J3 ✅ | T3.1–T3.9 | Clos : dogfood offline + 5 nombres écrits |
+| 4 — Directives/boucle | J4 ✅ | T4.1–T4.7 | Clos : boucle gouvernée + CLI + arrêt propre |
 | 4–10 | — | — | Non commencées |
 
 Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **186 tests**, tous verts.
@@ -124,3 +125,15 @@ P1 (reçus : mutation seule, no-op zéro écriture) ✅ appliqué au plan (à fa
 - **T3.8** (ce commit) : `directives/code.dogfood.json` (domaine `code`, seuils 0.0/ml_python justifiés B1) ; `engine_bridge/binaire.py` (résolution `GCN_BIN`/PATH/défaut dev) ; `ingestion.py` (F1 partagé : phrases → extract → ancre document → enveloppe → vérifie → ingest, absorbé en T4.4) ; `tests/offline/test_dogfood.py` (corpus fixture, lattice réelle si `gcn` présent sinon stub, I4 vérifié, offline) ; `scripts/dogfood_code.py` (run dépôt réel). **Constat décisif** : CLI `gcn` 4.0.0 présent et fonctionnel → lattice réelle + poids d'essai (structure réelle, poids bruts, B2 intact : aucun checkpoint touché). Mesure dogfood : 53 docs, 7900 phrases/CIRs, 234 entités, 185 confirmations, 6965 idempotentes (poids bruts → triplets génériques répétés, dédup conforme), 0 dropped/invalide, réponses avec `file://` citées. Labels `hidden_cause(?)` : encodeur d'essai, pas une qualité (B1, T3.9 mesure).
 
 - **T3.9** : tranche verticale (`tests/bench/tranche.py` + `scripts/tranche_verticale.py` + subset test + `tests/essai.py` factorisé d_emb=16). Intégrité redéfinie (présence mémoire, pas raisonnement — les flags B1 faussaient la mesure). **5 nombres** (`benchmarks/tranche-verticale-2026-10-12.json`) : précision null (0 verdict positif), rappel 0.0 (plancher : labels annotateur vs surface + flags B1 ; recouvrement token ~40 % en diagnostic), spécificité 1.0, latences 7.3/10.3 ms, 256 docs/s, intégrité 1.0, ES 24 exclues (pas de lattice). Compteur : **195 tests**, noyau 498/500. J3 clos.
+
+## 14. Phase 4 (J4) : directives, boucle, démarrage, CLI
+
+- **T4.1** : `directive/schema.py` (Pydantic strict, `extra=forbid`) — §9.3 + budgets, permissions→`Policy`, staleness, provisoires `[provisoire]` (I9 : T_domaine/Nmax/quorum 2.0/révision 3.0), `delegate: Literal[disabled]` (gate P3), plafonds canaux, alias, agents pairs, regex validées ; `DirectiveError` précis ; `docs/contrats/directive.schema.json` + test anti-drift ; dogfood valide (commentaire JSON retiré — `extra=forbid`).
+- **T4.2** : `directive/loader.py` (fail-closed) + `reload.py` (`Surveillant` : mtime+hash, ancienne conservée + alerte bornée, diff sources appliqué au registre sans restart, sha pour WAL). Hypothèse : noms d'adaptateurs uniques, clé `evidra_adapters:<nom>`.
+- **T4.3** : `policy.py` hors noyau (TABLE §1.3, `Situation` gelée, `selectionner()` pure ; vide ⇒ aucun outil).
+- **T4.4** : `boucle.py` hors noyau gelé (assignation `_budgets` documentée) — tick = tiède → tâches P4–P6 (COURS/TERMINÉE, panne→ABANDONNÉE) → sélection → tour → rapport ; `borner()` score+tronqué ; WAL : transitions, ingest, reçu `directive` (patch P1 : lus seuls sans mutation) ; `Magasin` verrou unique + cache snapshot + appliquer domaine par défaut. 8 cas (ordre P2<P4, budget tracé, anti-famine, tiède+hash, no-op zéro écriture).
+- **T4.5** : `boot/demarrage.py` 5 phases (manifeste premier/divergent→degraded motivé, WAL inventorié, ABANDONED repris, modèles B2 + param_epoch noté I1 + préchauffage worker, mémoires rebuildées, boucle câblée) ; refus nets (verrou, directive) ; `version_moteur()` côté bridge (I1 intact) ; `Magasin.inventorier/synchroniser` ; crash `os._exit` → reprise identique prouvée.
+- **T4.6** : `cli.py` (`run/ingest/query/compact/status`, `--data-dir` requis ADR-0011, `--essai` opt-in B1, ingest sans moteur → exit 2 ; query/status sans moteur ni verrou ; compact verrouillé-safe). `engine_bridge/essai.py` (fabrique partagée, `tests/essai.py` = shim).
+- **T4.7** : tick boucle < 10 ms mesuré ; SIGTERM → reçu final + fsync + verrou libéré (subprocess, re-ouverture prouvée).
+- Leçons : `set(str)` éclate (bug seuils) ; `poids` B1 faussent les nodiges (séparer intégrité/fidélité) ; d_emb=16 pas 4 ; permissions vides OK (absent refusé).
+- Compteur : **236 tests**, noyau 498/500. J4 : boucle offline, crash sain, directive tiède.
