@@ -57,6 +57,28 @@ def test_aucun_import_moteur_hors_engine_bridge():
     assert bad == []
 
 
+def test_subprocess_gcn_reserve_engine_bridge():
+    """Seul `engine_bridge` spawne `gcn` (ADR-0012/0013) ; le noyau jamais."""
+    import ast as _ast
+
+    fautifs = []
+    for path in sorted(SRC.rglob("*.py")):
+        if BRIDGE in path.parents or path == BRIDGE:
+            continue
+        arbre = _ast.parse(path.read_text())
+        for noeud in _ast.walk(arbre):
+            if isinstance(noeud, (_ast.Import, _ast.ImportFrom)):
+                noms = [a.name for a in noeud.names] + (
+                    [noeud.module] if isinstance(noeud, _ast.ImportFrom) and noeud.module else []
+                )
+                if any(
+                    n == "subprocess" or (isinstance(n, str) and n.startswith("subprocess."))
+                    for n in noms
+                ):
+                    fautifs.append(str(path.relative_to(SRC)))
+    assert fautifs == []
+
+
 def test_canari_symbole_interdit_detecte():
     # `analyze` est dans la liste blanche : autorisé à la lettre, quel que soit
     # le module (l'ambiguïté layer0/engine est tranchée par docs/engine-compat.md,

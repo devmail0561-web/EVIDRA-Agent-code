@@ -23,21 +23,19 @@ class RustIndisponible(Exception):  # noqa: N818 — vocabulaire SA (cf. T1.6)
     """CLI Rust absent, en timeout ou sortie illisible (fail-closed)."""
 
 
-def interroger_chaine(
-    binaire: str, iri: dict[str, Any], de_label: str, vers_label: str, *, timeout_s: float = 30.0
+def interroger(
+    binaire: str, iri: dict[str, Any], requete: str, *, timeout_s: float = 30.0
 ) -> dict[str, Any]:
-    """`CHAIN a -> b?` sur un IR dict : réponse JSON validée (top-k moteur)."""
-    for label in (de_label, vers_label):
-        if not isinstance(label, str) or not label.strip() or "\n" in label:
-            raise ValueError(f"label de requête invalide : {label!r}")
+    """Requête GCN-QL quelconque : réponse JSON validée (fail-closed)."""
+    if not isinstance(requete, str) or not requete.strip() or "\n" in requete:
+        raise ValueError(f"requête invalide : {requete!r}")
     if not isinstance(timeout_s, (int, float)) or timeout_s <= 0:
         raise ValueError(f"timeout invalide : {timeout_s!r}")
-    requete = f"CHAIN {de_label.strip()} -> {vers_label.strip()}?"
-    ir_path = Path("chaine_ir.json")
+    ir_path = Path("requete_ir.json")
     try:
         ir_path.write_text(json.dumps(iri), encoding="utf-8")
         acheve = subprocess.run(
-            [binaire, "query", "--ir", str(ir_path), requete],
+            [binaire, "query", "--ir", str(ir_path), requete.strip()],
             capture_output=True,
             text=True,
             timeout=float(timeout_s),
@@ -54,6 +52,19 @@ def interroger_chaine(
         ) from None
     if not isinstance(reponse, dict):
         raise RustIndisponible(f"réponse inattendue : {str(reponse)[:200]!r}")
+    return reponse
+
+
+def interroger_chaine(
+    binaire: str, iri: dict[str, Any], de_label: str, vers_label: str, *, timeout_s: float = 30.0
+) -> dict[str, Any]:
+    """`CHAIN a -> b?` : résultat (`found`/`links`/`ranked_paths`) validé."""
+    for label in (de_label, vers_label):
+        if not isinstance(label, str) or not label.strip() or "\n" in label:
+            raise ValueError(f"label de requête invalide : {label!r}")
+    reponse = interroger(
+        binaire, iri, f"CHAIN {de_label.strip()} -> {vers_label.strip()}?", timeout_s=timeout_s
+    )
     # Binaire récent : enveloppe always-answer ; ancien : résultat nu (toléré).
     resultat = reponse.get("result")
     if not isinstance(resultat, dict):
