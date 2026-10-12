@@ -55,6 +55,7 @@ class Magasin:
         self._appliquers: dict[str, Appliquer] = {}
         self._etats: dict[str, dict[str, Any]] = {}
         self._acces: dict[str, int] = {}
+        self._derniers_seq: dict[str, int] = {}
 
     def close(self) -> None:
         """Flush + fsync de tous les streams, libération du verrou."""
@@ -97,7 +98,9 @@ class Magasin:
     def append(self, stream: str, record: Record) -> int:
         """Ajoute au stream, retourne le `seq` (Protocol `Store`)."""
         self._acces[stream] = self._acces.get(stream, 0) + 1
-        return self.flux(stream).append(record.op, record.key, record.data)
+        seq = self.flux(stream).append(record.op, record.key, record.data)
+        self._derniers_seq[stream] = seq
+        return seq
 
     def _appliquer_pour(self, cle: str) -> Appliquer | None:
         """Appliquer enregistré, sinon sémantique domaine par défaut (T3.6)."""
@@ -153,6 +156,10 @@ class Magasin:
     def acces(self, cle: str) -> int:
         """Compteur d'accès au stream (preuve d'isolation)."""
         return self._acces.get(cle, 0)
+
+    def derniers_seq(self) -> dict[str, int]:
+        """Derniers `seq` écrits par stream (cette instance, pour `/status`)."""
+        return dict(self._derniers_seq)
 
     def synchroniser(self) -> None:
         """Flush + fsync des streams ouverts, sans fermer (point de reprise)."""

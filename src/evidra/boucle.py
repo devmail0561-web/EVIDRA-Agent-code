@@ -82,6 +82,7 @@ class Boucle:
         self._hash_directive = surveillant.empreinte_courante() if surveillant is not None else ""
         self._actifs: set[Priorite] = set()
         self._plan: dict[Priorite, str] = {}
+        self._dans_tick = False
         for niveau in Priorite:
             # `n=niveau` : lie la valeur (closure en boucle sinon).
             self._ordonnanceur.enregistrer(
@@ -98,25 +99,37 @@ class Boucle:
         """Ticks écoulés (exploitant CLI)."""
         return self._ordonnanceur.tick
 
+    def etat_cycle(self) -> dict[str, object]:
+        """Cycle courant : mono-thread, échantillonné entre ticks (§25)."""
+        return {
+            "phase": "tour" if self._dans_tick else "attente",
+            "outil_en_cours": None,
+            "tick": self._ordonnanceur.tick,
+        }
+
     def tick(self) -> RapportBoucle:
         """Un cycle complet : tiède → tâches → sélection → tour → rapport."""
-        changee = self._tiede()
-        self._drainer_taches()
-        selection = selectionner(self._situer())
-        self._actifs = set(selection)
-        self._plan = {niveau: outils[0] for niveau, outils in selection.items()}
-        rapport = self._ordonnanceur.tour()
-        alertes: list[str] = []
-        if self._surveillant is not None:
-            alertes.extend(self._surveillant.alertes[-5:])
-        return RapportBoucle(
-            tick=rapport.tick,
-            recus=rapport.recus,
-            budgets_depasse=rapport.budgets_depasse,
-            selection=tuple(selection),
-            directive_changee=changee,
-            alertes=tuple(alertes),
-        )
+        self._dans_tick = True
+        try:
+            changee = self._tiede()
+            self._drainer_taches()
+            selection = selectionner(self._situer())
+            self._actifs = set(selection)
+            self._plan = {niveau: outils[0] for niveau, outils in selection.items()}
+            rapport = self._ordonnanceur.tour()
+            alertes: list[str] = []
+            if self._surveillant is not None:
+                alertes.extend(self._surveillant.alertes[-5:])
+            return RapportBoucle(
+                tick=rapport.tick,
+                recus=rapport.recus,
+                budgets_depasse=rapport.budgets_depasse,
+                selection=tuple(selection),
+                directive_changee=changee,
+                alertes=tuple(alertes),
+            )
+        finally:
+            self._dans_tick = False
 
     def boucler(self, arret: threading.Event, delai: float = 0.05) -> None:
         """Boucle jusqu'au signal (`arret.wait` : réveil immédiat, pas de spin)."""
@@ -213,6 +226,7 @@ class Boucle:
                     status=Status.FAILED, payload={"tache": ident, "motif": f"panne outil : {exc}"}
                 )
             try:
+                self._registres.noter_conso(ident, recu.cost.ms, recu.cost.calls)
                 self._registres.passer_etat(ident, EtatTache.TERMINEE)
             except ValueError as exc:
                 return ToolResult(status=Status.FAILED, payload={"tache": ident, "motif": str(exc)})

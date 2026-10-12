@@ -107,6 +107,8 @@ class Registres:
                     "id": ident,
                     "type": type_tache,
                     "budget": budget,
+                    "consomme_ms": 0.0,
+                    "consomme_appels": 0,
                     "deadline": deadline,
                     "etat": EtatTache.ATTENTE.value,
                     "motif": "",
@@ -135,6 +137,17 @@ class Registres:
         """Fiche tâche, `None` si inconnue."""
         trouve = self._magasin.lookup(FLUX_TACHES, f"task:{ident}")
         return dict(trouve.data) if trouve is not None else None
+
+    def noter_conso(self, ident: str, ms: float, appels: int) -> None:
+        """Cumule le coût mesuré d'une exécution (suivi conso, T5.9)."""
+        fiche = self.tache(ident)
+        if fiche is None:
+            raise ValueError(f"tâche inconnue : {ident!r}")
+        fiche["consomme_ms"] = float(fiche.get("consomme_ms", 0.0)) + ms
+        fiche["consomme_appels"] = int(fiche.get("consomme_appels", 0)) + appels
+        self._magasin.append(
+            FLUX_TACHES, Record(stream=FLUX_TACHES, op="conso", key=f"task:{ident}", data=fiche)
+        )
 
     def relever_expiration(self, maintenant_iso: str) -> list[str]:
         """Marque `abandoned` (motivé) les tâches dépassées non terminées."""

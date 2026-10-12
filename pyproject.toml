@@ -37,6 +37,7 @@ validate = "evidra.tools.validate:OutilValider"
 query_cycles = "evidra.tools.query_cycles:OutilCycles"
 query_gaps = "evidra.tools.query_gaps:OutilLacunes"
 counterfactual = "evidra.tools.counterfactual:OutilContrefactuel"
+report = "evidra.tools.report:OutilRapport"
 
 [project.entry-points."evidra_adapters"]
 # un entry-point par adaptateur — ex :
