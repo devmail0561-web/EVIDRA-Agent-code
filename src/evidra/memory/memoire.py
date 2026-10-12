@@ -28,6 +28,7 @@ from evidra.memory.envelope import (
     confirmer,
     enveloppe_depuis_resume,
     normaliser_label,
+    span_vers_dict,
 )
 from evidra.memory.index import Index
 
@@ -57,6 +58,7 @@ class Memoire:
         self.entites: dict[Triplet, Envelope] = {}
         self.vues: set[str] = set()
         self.index = Index()
+        self.par_id: dict[str, Triplet] = {}  # id d'index → triplet (stable sous alias T6.5)
 
     def observer(
         self,
@@ -98,13 +100,45 @@ class Memoire:
         return Issue("nouvelle", entite, triplet, observation)
 
     def ajouter(self, triplet: Triplet, observation: str, enveloppe: Envelope) -> None:
-        """Enregistre une entité (index + triplet + vue)."""
+        """Enregistre une entité (index + triplet + vue + id)."""
         self.entites[triplet] = enveloppe
         self.vues.add(observation)
+        self.par_id[id_triplet(triplet)] = triplet
         cir = enveloppe.cir
         self.index.ajouter(
             id_triplet(triplet), cir.source, cir.target, cir.relation, cir.confidence
         )
+
+    def preuves(self, ids: tuple[str, ...] | list[str]) -> list[dict[str, Any]]:
+        """Preuves sourcées pour des ids d'index (I4 complet, quarantinés exclus T9.5)."""
+        preuves = []
+        for ident in ids:
+            triplet = self.par_id.get(ident)
+            if triplet is None:
+                continue
+            enveloppe = self.entites.get(triplet)
+            if enveloppe is None or enveloppe.quarantine is not None:
+                continue
+            cir, prov = enveloppe.cir, enveloppe.cir.provenance
+            preuves.append(
+                {
+                    "source": cir.source,
+                    "cible": cir.target,
+                    "relation": cir.relation,
+                    "confiance": cir.confidence,
+                    "statut": enveloppe.status.value,
+                    "fiabilite_source": enveloppe.source_reliability,
+                    "derivation": enveloppe.derivation.value,
+                    "provenance": {
+                        "ref": prov.ref,
+                        "span": span_vers_dict(prov.span),
+                        "extraction_method": prov.extraction_method,
+                        "model_version": prov.model_version,
+                        "extracted_at": prov.extracted_at,
+                    },
+                }
+            )
+        return preuves
 
     def reconstruire(self, etat: Mapping[str, Any]) -> int:
         """Replie un état WAL brut : retours `(ignorés)`, tolérant (I12)."""

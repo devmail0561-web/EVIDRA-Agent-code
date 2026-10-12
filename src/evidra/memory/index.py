@@ -119,6 +119,19 @@ class Index:
             unions |= self._tokens.get(token, set())
         return tuple(sorted(unions))
 
+    def par_sous_chaine(self, fragment: str, limite: int = 50) -> tuple[str, ...]:
+        """Dernier recours borné : ids dont un token contient le fragment."""
+        frag = normaliser_label(fragment)
+        if not frag:
+            return ()
+        ids: set[str] = set()
+        for token, porteurs in self._tokens.items():
+            if frag in token:
+                ids |= porteurs
+                if len(ids) >= limite:
+                    break
+        return tuple(sorted(ids)[:limite])
+
     def par_relation(self, relation: str) -> tuple[str, ...]:
         """Ids des arêtes d'une relation."""
         return tuple(sorted(self._relations.get(relation, ())))
