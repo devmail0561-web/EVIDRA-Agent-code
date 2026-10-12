@@ -52,6 +52,13 @@ def interroger(
         ) from None
     if not isinstance(reponse, dict):
         raise RustIndisponible(f"réponse inattendue : {str(reponse)[:200]!r}")
+    # Enveloppe always-answer : on rend le résultat + statut d'enveloppe.
+    resultat = reponse.get("result")
+    if isinstance(resultat, dict):
+        resultat = dict(resultat)
+        resultat["_status"] = reponse.get("status", "ok")
+        return resultat
+    reponse["_status"] = reponse.get("status", "ok")
     return reponse
 
 
