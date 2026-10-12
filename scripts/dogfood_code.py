@@ -21,6 +21,7 @@ from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RACINE / "src"))
+sys.path.insert(0, str(RACINE))
 
 from evidra.adapters.local_files import AdaptateurFichiers  # noqa: E402
 from evidra.engine_bridge.binaire import trouver_binaire  # noqa: E402
@@ -30,31 +31,12 @@ from evidra.kernel.gate import Policy, Rule  # noqa: E402
 from evidra.memory.memoire import Memoire  # noqa: E402
 from evidra.memory.store import Magasin  # noqa: E402
 from evidra.tools.ingest import OutilIngest, Seuils  # noqa: E402
+from tests.essai import moteur_essai  # noqa: E402
 
 
 def _moteur_essai(binaire: str, sous_commande: str = "analyze"):
-    from gcn_python.constants import NODE_TYPES, RELATION_TYPES, rgcn_n_relations
-    from gcn_python.engine import GCNEngine
-    from gcn_python.frontend.bridge import GCNLatticeParser
-    from gcn_python.layer1.embedding import WordEmbedding
-    from gcn_python.layer1.features import FeatureVocabulary
-    from gcn_python.layer2.reference import MLPEncoder
-    from gcn_python.layer3.reference import RGCNLayer
-    from gcn_python.pipeline.cgnp import CGNPipeline
-
-    vocab = FeatureVocabulary()
-    embedding = WordEmbedding(d_emb=4, seed=42)
-    d_eff = vocab.d_clause_effective(embedding.d_emb)
-    d_edge = vocab.d_edge_closed_loop(d_eff, len(NODE_TYPES), embedding.d_emb)
-    pipeline = CGNPipeline(
-        encoder=MLPEncoder(d_clause=d_eff, d_edge=d_edge),
-        graph=RGCNLayer(
-            d_in=d_eff, d_out=d_eff, n_relations=rgcn_n_relations(len(RELATION_TYPES), False)
-        ),
-        vocabulary=vocab,
-        word_embedding=embedding,
-    )
-    return GCNEngine(pipeline, text_parser=GCNLatticeParser(binaire, sous_commande))
+    moteur, _reelle = moteur_essai(binaire, sous_commande=sous_commande)
+    return moteur
 
 
 def main() -> None:

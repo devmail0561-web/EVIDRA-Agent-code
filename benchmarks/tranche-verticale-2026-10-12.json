@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-12T10:54:01.221797+00:00",
+  "gold": "/home/virus-one/Bureau/harness-gcn/benchmarks/gold-219.json",
+  "couverture": {
+    "incluses": 195,
+    "exclues_es": 24,
+    "motif": "pas de lattice es"
+  },
+  "seuils": {
+    "min_confiance": 0.0,
+    "methodes": [
+      "ml_python",
+      "symbolic_rust"
+    ]
+  },
+  "poids": "essai-bruts-B1",
+  "graphe": {
+    "entites": 354
+  },
+  "integrite_consistance": 1.0,
+  "invalides": 0,
+  "nombres": {
+    "precision_confirmed": null,
+    "rappel_confirmed": 0.0,
+    "taux_unconfirmed": 1.0,
+    "latence_mediane_ms": 7.337,
+    "latence_p99_ms": 10.286,
+    "docs_sec": 256.4,
+    "vrais_trouves": 0,
+    "faux_trouves": 0,
+    "n_gold": 206,
+    "n_cross": 206
+  }
+}

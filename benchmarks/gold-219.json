@@ -1,0 +1,2703 @@
+{
+ "header": {
+  "name": "gold-219-slim",
+  "origin_repo": "devmail0561-web/gcn_engine",
+  "origin_commit": "20163daea57c0da065e22aa2cdb179ab69ba194a",
+  "origin_path": "gcn-datasets/DATA/supervision/tranche_t2/t2_gold.json",
+  "origin_sha256": "40ee5921cc3c8e6491c79b691f83f87d663f63422ebcffd4da1da741495bfe40",
+  "built": "2026-10-12",
+  "n": 219,
+  "usage": "tranche verticale SA (T3.9) : textes + triplets gold. Tokens/CIR complets restes cote moteur.",
+  "poids": "aucun — entree, pas modele"
+ },
+ "phrases": [
+  {
+   "sid": "s001",
+   "text": "Pourtant, nous continuons à réagir plutôt qu’à prévenir.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "continuer(réagir)",
+     "relation": "opposition",
+     "dst": "prévenir"
+    }
+   ]
+  },
+  {
+   "sid": "s002",
+   "text": "Cette stratégie permet un maintien de la comparabilité.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "stratégie",
+     "relation": "enable",
+     "dst": "maintien(comparabilité)"
+    }
+   ]
+  },
+  {
+   "sid": "s003",
+   "text": "La symbiose multipartenariale résulte d'une association, appelée lichénification ou lichénisation.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "association",
+     "relation": "cause",
+     "dst": "symbiose"
+    }
+   ]
+  },
+  {
+   "sid": "s004",
+   "text": "Un diagnostic précoce permet des interventions pour améliorer leur pronostic.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "diagnostic précoce",
+     "relation": "enable",
+     "dst": "interventions"
+    },
+    {
+     "src": "améliorer(pronostic)",
+     "relation": "motivation",
+     "dst": "interventions"
+    }
+   ]
+  },
+  {
+   "sid": "s005",
+   "text": "Cette fonction appétitive ou conative s'oppose donc à la cognition.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "fonction appétitive",
+     "relation": "opposition",
+     "dst": "cognition"
+    }
+   ]
+  },
+  {
+   "sid": "s006",
+   "text": "Depuis 2015, elle provoque une épidémie sur le continent américain.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "elle",
+     "relation": "cause",
+     "dst": "épidémie"
+    }
+   ]
+  },
+  {
+   "sid": "s007",
+   "text": "Le workflow permet un pilotage et un suivi des traitements.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "workflow",
+     "relation": "enable",
+     "dst": "pilotage(suivi)"
+    }
+   ]
+  },
+  {
+   "sid": "s008",
+   "text": "En raison de nombreux problèmes insolubles, l'architecture fédérée fut pratiquement abandonnée.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "problèmes insolubles",
+     "relation": "cause",
+     "dst": "abandon(architecture)"
+    }
+   ]
+  },
+  {
+   "sid": "s009",
+   "text": "Malgré cette variabilité, les fonctions communes ont des noms conventionnellement constants.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "variabilité",
+     "relation": "concession",
+     "dst": "noms constants"
+    }
+   ]
+  },
+  {
+   "sid": "s010",
+   "text": "Cependant, quand une affection est rare, ces deux valeurs sont proches.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "affection rare",
+     "relation": "condition",
+     "dst": "valeurs proches"
+    }
+   ]
+  },
+  {
+   "sid": "s011",
+   "text": "La diffusion des tests PCR permet, en 2022, un diagnostic fiable.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "diffusion(tests)",
+     "relation": "enable",
+     "dst": "diagnostic fiable"
+    }
+   ]
+  },
+  {
+   "sid": "s012",
+   "text": "Exemples Conditions héréditaires : l'hémophilie, un trouble qui entraîne des saignements excessifs.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "hémophilie",
+     "relation": "cause",
+     "dst": "saignements excessifs"
+    }
+   ]
+  },
+  {
+   "sid": "s013",
+   "text": "Des méthodes existent néanmoins pour surmonter ses craintes et dépasser ses traumatismes.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "surmonter(craintes)",
+     "relation": "motivation",
+     "dst": "méthodes"
+    }
+   ]
+  },
+  {
+   "sid": "s014",
+   "text": "Il l’appela Bacillus bifidus en raison de sa morphologie bifide en Y.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "morphologie bifide",
+     "relation": "cause",
+     "dst": "appeler(Bacillus)"
+    }
+   ]
+  },
+  {
+   "sid": "s015",
+   "text": "Tout d'abord, le tryptophane est transformé en 5-hydroxytryptophane par l'enzyme tryptophane hydroxylase (TH).",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "tryptophane",
+     "relation": "sequence",
+     "dst": "transformation(5-hydroxytryptophane)"
+    }
+   ]
+  },
+  {
+   "sid": "s016",
+   "text": "Celles-ci permettront de détecter lorsque l'implémentation sera en train de dévier de l'architecture.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "dévier(implémentation)",
+     "relation": "condition",
+     "dst": "détecter"
+    },
+    {
+     "src": "celles-ci",
+     "relation": "enable",
+     "dst": "détecter"
+    }
+   ]
+  },
+  {
+   "sid": "s017",
+   "text": "Ce problème est également constaté lorsque les spécifications ne sont pas assez précises.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "spécifications imprécises",
+     "relation": "condition",
+     "dst": "problème constaté"
+    }
+   ]
+  },
+  {
+   "sid": "s018",
+   "text": "La maladie entraîne une rétraction et une flexion progressive et irréductible des doigts.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "maladie",
+     "relation": "cause",
+     "dst": "rétraction(flexion)"
+    }
+   ]
+  },
+  {
+   "sid": "s019",
+   "text": "Si ce projet de test est prometteur, il est néanmoins encore très imparfait.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "projet prometteur",
+     "relation": "concession",
+     "dst": "imparfait"
+    }
+   ]
+  },
+  {
+   "sid": "s020",
+   "text": "Les professionnels de santé (soins infirmiers, laboratoires) sont aussi concernés, bien que plus rarement.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "rarement",
+     "relation": "concession",
+     "dst": "concernés"
+    }
+   ]
+  },
+  {
+   "sid": "s021",
+   "text": "La transmission indirecte par surface contaminée, bien que possible, n'a pas été formellement démontrée.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "possible",
+     "relation": "concession",
+     "dst": "non démontrée"
+    }
+   ]
+  },
+  {
+   "sid": "s022",
+   "text": "L’autophagosome ainsi formé va ensuite fusionner avec un lysosome pour dégrader les composés capturés.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "formation(autophagosome)",
+     "relation": "sequence",
+     "dst": "fusionner(lysosome)"
+    },
+    {
+     "src": "dégrader(composés)",
+     "relation": "motivation",
+     "dst": "fusionner(lysosome)"
+    }
+   ]
+  },
+  {
+   "sid": "s023",
+   "text": "Le maintien de la plateforme permet toutefois une future réouverture au trafic des voyageurs.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "maintien(plateforme)",
+     "relation": "enable",
+     "dst": "réouverture"
+    }
+   ]
+  },
+  {
+   "sid": "s024",
+   "text": "La communication via ces ports suit un protocole qui dépend de l'objectif de l'interaction.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "communication(protocole)",
+     "relation": "data_dependency",
+     "dst": "objectif(interaction)"
+    }
+   ]
+  },
+  {
+   "sid": "s025",
+   "text": "Le SIDA est le dernier stade de l'infection au VIH, lorsque l'immunodépression est sévère.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "immunodépression sévère",
+     "relation": "condition",
+     "dst": "SIDA(stade)"
+    }
+   ]
+  },
+  {
+   "sid": "s026",
+   "text": "Ce moyen de transmission d'événements repose sur un bus de message store and forward.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "transmission(événements)",
+     "relation": "data_dependency",
+     "dst": "bus(message)"
+    }
+   ]
+  },
+  {
+   "sid": "s027",
+   "text": "Cela a été rendu possible grâce à différentes bases de données, accessibles en lignes.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "bases(données)",
+     "relation": "enable",
+     "dst": "rendu possible"
+    }
+   ]
+  },
+  {
+   "sid": "s028",
+   "text": "Donc lorsque la valeur p est très petite (significative), le point sera très élevé.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "valeur p petite",
+     "relation": "condition",
+     "dst": "point élevé"
+    }
+   ]
+  },
+  {
+   "sid": "s029",
+   "text": "Si ce dispositif a été mis en place, c’est parce que l’heure est grave.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "heure grave",
+     "relation": "cause",
+     "dst": "mise en place(dispositif)"
+    }
+   ]
+  },
+  {
+   "sid": "s030",
+   "text": "Les premiers résultats montrent qu’il bloque efficacement et de manière réversible la fabrication des spermatozoïdes.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "il",
+     "relation": "prevent",
+     "dst": "fabrication(spermatozoïdes)"
+    }
+   ]
+  },
+  {
+   "sid": "s031",
+   "text": "Il est toutefois recommandé de rechercher systématiquement un diabète éventuel devant une maladie de Dupuytren.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "maladie(Dupuytren)",
+     "relation": "condition",
+     "dst": "rechercher(diabète)"
+    }
+   ]
+  },
+  {
+   "sid": "s032",
+   "text": "Anthropic recommande toutefois de configurer Cowork pour qu'il n'ait pas accès à des informations sensibles.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "configurer(Cowork)",
+     "relation": "prevent",
+     "dst": "pas accès(informations)"
+    }
+   ]
+  },
+  {
+   "sid": "s033",
+   "text": "L'utilisateur s'attend à ce que le système puisse être facilement remplacé lorsque cela devient nécessaire.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "nécessaire",
+     "relation": "condition",
+     "dst": "remplacé(système)"
+    }
+   ]
+  },
+  {
+   "sid": "s034",
+   "text": "Il s'inspire d'un empirisme méthodique qui lui permet de préciser les principes d'une telle classification.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "empirisme méthodique",
+     "relation": "enable",
+     "dst": "préciser(principes)"
+    }
+   ]
+  },
+  {
+   "sid": "s035",
+   "text": "Cette partie, alors appelée « segment quantifiable », permet de calculer la quantité d’ADN initial.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "partie(segment)",
+     "relation": "enable",
+     "dst": "calculer(quantité)"
+    }
+   ]
+  },
+  {
+   "sid": "s036",
+   "text": "La séquence des lettres sélectionnées conduit ainsi à l’écriture et à la transmission d’un message.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "séquence(lettres)",
+     "relation": "cause",
+     "dst": "écriture(transmission)"
+    }
+   ]
+  },
+  {
+   "sid": "s037",
+   "text": "Il s’agit donc d’une élection importante, même si elle est moins connue que les législatives.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "moins connue",
+     "relation": "concession",
+     "dst": "élection importante"
+    }
+   ]
+  },
+  {
+   "sid": "s038",
+   "text": "Ceci permet que la seule variable qui soit différente entre les groupes soit le traitement.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "ceci",
+     "relation": "enable",
+     "dst": "variable(traitement)"
+    }
+   ]
+  },
+  {
+   "sid": "s039",
+   "text": "À terme, leur destruction entraîne une carence en insuline et impose un traitement à vie.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "destruction",
+     "relation": "cause",
+     "dst": "carence(insuline)"
+    },
+    {
+     "src": "carence(insuline)",
+     "relation": "cause",
+     "dst": "traitement"
+    }
+   ]
+  },
+  {
+   "sid": "s040",
+   "text": "En revanche, si le fichier est modifié, les deux versions sont stockées sur le disque.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "fichier modifié",
+     "relation": "condition",
+     "dst": "stockées(versions)"
+    }
+   ]
+  },
+  {
+   "sid": "s041",
+   "text": "Dès le début, Git a été pensé dans le but de fonctionner de façon décentralisée.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "fonctionner(décentralisé)",
+     "relation": "motivation",
+     "dst": "penser(Git)"
+    }
+   ]
+  },
+  {
+   "sid": "s042",
+   "text": "Si son accès demeure théoriquement interdit, la Petite Ceinture est particulièrement prisée des amateurs d'exploration urbaine.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "accès interdit",
+     "relation": "concession",
+     "dst": "prisée"
+    }
+   ]
+  },
+  {
+   "sid": "s043",
+   "text": "Malgré des fluctuations importantes, ces taux restent globalement élevés, et ont atteint des records en 2024-2025.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "fluctuations importantes",
+     "relation": "concession",
+     "dst": "taux élevés"
+    }
+   ]
+  },
+  {
+   "sid": "s044",
+   "text": "Méconnu du grand public, ce scrutin indirect est pourtant d’importance dans le jeu politique et institutionnel.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "méconnu(public)",
+     "relation": "concession",
+     "dst": "importance(scrutin)"
+    }
+   ]
+  },
+  {
+   "sid": "s045",
+   "text": "Le diagnostic est généralement posé d'après les signes et symptômes et grâce à des examens complémentaires.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "signes(symptômes, examens)",
+     "relation": "enable",
+     "dst": "diagnostic posé"
+    }
+   ]
+  },
+  {
+   "sid": "s046",
+   "text": "Ici, les… Cet article est réservé aux abonnés.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "article",
+     "relation": "filter",
+     "dst": "abonnés"
+    }
+   ]
+  },
+  {
+   "sid": "s047",
+   "text": "Dommage que cet article ne soit réservé qu'aux abonnés.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "article",
+     "relation": "filter",
+     "dst": "abonnés"
+    }
+   ]
+  },
+  {
+   "sid": "s048",
+   "text": "L’étape suivante est la ligature basée sur la proximité.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "ligature",
+     "relation": "data_dependency",
+     "dst": "proximité"
+    }
+   ]
+  },
+  {
+   "sid": "s049",
+   "text": "Seuls circulent encore, de nuit, quelques trains de grandes lignes.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "circuler(nuit)",
+     "relation": "filter",
+     "dst": "trains"
+    }
+   ]
+  },
+  {
+   "sid": "s050",
+   "text": "Une prise en charge… Cet article est réservé aux abonnés.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "article",
+     "relation": "filter",
+     "dst": "abonnés"
+    }
+   ]
+  },
+  {
+   "sid": "s051",
+   "text": "Cette acidification inhibe le développement d'un grand nombre de bactéries d'altération.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "acidification",
+     "relation": "prevent",
+     "dst": "développement(bactéries)"
+    }
+   ]
+  },
+  {
+   "sid": "s052",
+   "text": "Le BIOS comprend également le logiciel nécessaire à l’amorçage de l’ordinateur.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "amorçage(ordinateur)",
+     "relation": "data_dependency",
+     "dst": "logiciel"
+    }
+   ]
+  },
+  {
+   "sid": "s053",
+   "text": "Un autre logiciel nommé Cowork vise à automatiser diverses tâches bureautiques.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "automatiser(tâches)",
+     "relation": "motivation",
+     "dst": "logiciel(Cowork)"
+    }
+   ]
+  },
+  {
+   "sid": "s054",
+   "text": "Contrairement à la Terre, la Lune ne possède pratiquement pas d’atmosphère.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "Terre",
+     "relation": "opposition",
+     "dst": "pas atmosphère(Lune)"
+    }
+   ]
+  },
+  {
+   "sid": "s055",
+   "text": "Le système requiert une haute disponibilité et ne peut être interrompu.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "système",
+     "relation": "data_dependency",
+     "dst": "disponibilité"
+    }
+   ]
+  },
+  {
+   "sid": "s056",
+   "text": "Un diagnostic qui ne signifie… Cet article est réservé aux abonnés.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "article",
+     "relation": "filter",
+     "dst": "abonnés"
+    }
+   ]
+  },
+  {
+   "sid": "s057",
+   "text": "La deuxième génération d'ordinateurs est basée sur l'invention du transistor en 1947.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "génération(ordinateurs)",
+     "relation": "data_dependency",
+     "dst": "invention(transistor)"
+    }
+   ]
+  },
+  {
+   "sid": "s058",
+   "text": "« Historiquement, les rétroactions les plus… Cet article est réservé aux abonnés.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "article",
+     "relation": "filter",
+     "dst": "abonnés"
+    }
+   ]
+  },
+  {
+   "sid": "s059",
+   "text": "Certes, je compatis pour ces gens, mais n’en faites pas une généralité.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "compatis(gens)",
+     "relation": "concession",
+     "dst": "faites généralité"
+    }
+   ]
+  },
+  {
+   "sid": "s060",
+   "text": "Aux glucides de petite taille ?… Cet article est réservé aux abonnés.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "article",
+     "relation": "filter",
+     "dst": "abonnés"
+    }
+   ]
+  },
+  {
+   "sid": "s061",
+   "text": "À la fois excitant et calmant… Cet article est réservé aux abonnés.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "article",
+     "relation": "filter",
+     "dst": "abonnés"
+    }
+   ]
+  },
+  {
+   "sid": "s062",
+   "text": "Le diagnostic nécessite une fibroscopie œsogastrique et une coloscopie avec réalisation de biopsies.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "diagnostic",
+     "relation": "data_dependency",
+     "dst": "fibroscopie(biopsies)"
+    }
+   ]
+  },
+  {
+   "sid": "s063",
+   "text": "Ces cellules déréglées finissent parfois par former une masse qu'on appelle tumeur maligne.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "cellules déréglées",
+     "relation": "sequence",
+     "dst": "former(masse)"
+    }
+   ]
+  },
+  {
+   "sid": "s064",
+   "text": "De ce fait, cette technique nécessite la connaissance préalable des régions en interaction.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "technique",
+     "relation": "data_dependency",
+     "dst": "connaissance(régions)"
+    }
+   ]
+  },
+  {
+   "sid": "s065",
+   "text": "D’autant qu’ils sont suivis d’une conversation téléphonique puis d’une visite de contrôle à domicile.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "conversation téléphonique",
+     "relation": "sequence",
+     "dst": "visite(contrôle)"
+    }
+   ]
+  },
+  {
+   "sid": "s066",
+   "text": "L'ion Ag+ inhibe probablement la transmission du signal au niveau des récepteurs de l'éthylène.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "ion Ag+",
+     "relation": "prevent",
+     "dst": "transmission(signal)"
+    }
+   ]
+  },
+  {
+   "sid": "s067",
+   "text": "Un pilote (anglais driver) est un composant logiciel qui assure l'utilisation d'une pièce de matériel informatique.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "pilote(composant)",
+     "relation": "control_dependency",
+     "dst": "utilisation(pièce)"
+    }
+   ]
+  },
+  {
+   "sid": "s068",
+   "text": "Il reste malgré tout tardif en raison du large spectre des symptômes et des signes cliniques.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "spectre(symptômes, signes)",
+     "relation": "cause",
+     "dst": "tardif"
+    }
+   ]
+  },
+  {
+   "sid": "s069",
+   "text": "», hurle l’une des deux dans l’oreille de l’autre, alors que s’éloigne un Big Bus bordeaux.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "hurler(oreille)",
+     "relation": "opposition",
+     "dst": "éloigner(Bus)"
+    }
+   ]
+  },
+  {
+   "sid": "s070",
+   "text": "La prévention repose uniquement sur les mesures de lutte contre la transmission par les moustiques (moustiquaire, répulsif…).",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "mesures(lutte)",
+     "relation": "prevent",
+     "dst": "transmission(moustiques)"
+    }
+   ]
+  },
+  {
+   "sid": "s071",
+   "text": "» Dès que Fleur Breteau, fondatrice du collectif Cancer Colère, prend le micro, l’ambiance dans l’auditorium change.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "prendre(micro)",
+     "relation": "condition",
+     "dst": "change(ambiance)"
+    }
+   ]
+  },
+  {
+   "sid": "s072",
+   "text": "La transmission augmente en intérieur mal ventilé et lorsque la personne infectée tousse, éternue, parle ou chante.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "tousse(éternue, parle, chante)",
+     "relation": "condition",
+     "dst": "augmente(transmission)"
+    }
+   ]
+  },
+  {
+   "sid": "s073",
+   "text": "Alors que 1,6 million de femmes doivent être alertées par courrier, elle raconte son parcours au Figaro.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "alertées(femmes)",
+     "relation": "opposition",
+     "dst": "raconte(parcours)"
+    }
+   ]
+  },
+  {
+   "sid": "s074",
+   "text": "La première étant le devoir, tandis que la seconde est la satisfaction du désir ou motivation sensible.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "devoir",
+     "relation": "opposition",
+     "dst": "satisfaction(désir)"
+    }
+   ]
+  },
+  {
+   "sid": "s075",
+   "text": "À l'opposé de la dengue, le paludisme est davantage présent dans les campagnes que dans les villes.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "dengue",
+     "relation": "opposition",
+     "dst": "paludisme présent(campagnes)"
+    }
+   ]
+  },
+  {
+   "sid": "s076",
+   "text": "L’analyse décrit le « quoi faire » alors que l’architecture décrit le « comment le faire ».",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "décrire(quoi)",
+     "relation": "opposition",
+     "dst": "décrire(comment)"
+    }
+   ]
+  },
+  {
+   "sid": "s077",
+   "text": "Elle protège l’emploi à court terme, mais fragilise la progression, la reconnaissance et, finalement, la motivation au travail.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "protège(emploi)",
+     "relation": "opposition",
+     "dst": "fragilise(progression)"
+    }
+   ]
+  },
+  {
+   "sid": "s078",
+   "text": "L'étape suivante est la transcription inverse (reverse transcription en anglais), qui vise à convertir les ARN en ADNc.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "convertir(ARN)",
+     "relation": "motivation",
+     "dst": "transcription inverse"
+    }
+   ]
+  },
+  {
+   "sid": "s079",
+   "text": "La première étape est le génotypage des échantillons d'ADN de la cohorte afin de déterminer des variants génétiques.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "déterminer(variants)",
+     "relation": "motivation",
+     "dst": "génotypage(échantillons)"
+    }
+   ]
+  },
+  {
+   "sid": "s080",
+   "text": "Ajouter plus de thiosulfate aura l'effet inverse, il faudra plus de temps pour que la couleur bleue apparaisse.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "apparaisse(couleur)",
+     "relation": "motivation",
+     "dst": "ajouter(thiosulfate)"
+    }
+   ]
+  },
+  {
+   "sid": "s081",
+   "text": "Il faut attendre l'avènement de microscopes performants pour que les interactions biotiques dans ces organismes soient mises en évidence.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "mises en évidence(interactions)",
+     "relation": "motivation",
+     "dst": "attendre(avènement)"
+    }
+   ]
+  },
+  {
+   "sid": "s082",
+   "text": "Le programmeur effectue également de nombreux tests en vue de déceler un maximum de bugs — des erreurs de programmation.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "déceler(bugs)",
+     "relation": "motivation",
+     "dst": "effectue(tests)"
+    }
+   ]
+  },
+  {
+   "sid": "s083",
+   "text": "Le 5-hydroxytryptophane subit ensuite une autre modification par l'enzyme aminoacide aromatique décarboxylase (AA-DC) pour donner la sérotonine.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "5-hydroxytryptophane",
+     "relation": "sequence",
+     "dst": "modification"
+    },
+    {
+     "src": "sérotonine",
+     "relation": "motivation",
+     "dst": "modification"
+    }
+   ]
+  },
+  {
+   "sid": "s084",
+   "text": "Enfin, saisissez-vous d’une loupe binoculaire et observez l’infusion : un monde s’ouvrira alors, peuplé de créatures extraordinaires.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "saisir(loupe)",
+     "relation": "sequence",
+     "dst": "observer(infusion)"
+    },
+    {
+     "src": "observer(infusion)",
+     "relation": "sequence",
+     "dst": "s'ouvrira(monde)"
+    }
+   ]
+  },
+  {
+   "sid": "s085",
+   "text": "Une proportion importante de personnes infectées, notamment d'enfants, peu symptomatiques ou asymptomatiques peuvent néanmoins transmettre la maladie.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "asymptomatiques",
+     "relation": "concession",
+     "dst": "transmettre(maladie)"
+    }
+   ]
+  },
+  {
+   "sid": "s086",
+   "text": "PSYCHOLOGIE - Malgré nos vies modernes ultra-sécurisées, des craintes développées par nos ancêtres demeurent très largement partagées.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "vies sécurisées",
+     "relation": "concession",
+     "dst": "craintes partagées"
+    }
+   ]
+  },
+  {
+   "sid": "s087",
+   "text": "DÉCRYPTAGE - Malgré les politiques publiques mises en place, le décrochage des filles reste stable en mathématiques.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "politiques publiques",
+     "relation": "concession",
+     "dst": "décrochage stable"
+    }
+   ]
+  },
+  {
+   "sid": "s088",
+   "text": "À l'exception de quelques bactéries halophiles, aucun développement bactérien n'est observé en dessous de aw=0,85.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "bactéries halophiles",
+     "relation": "filter",
+     "dst": "développement observé"
+    }
+   ]
+  },
+  {
+   "sid": "s089",
+   "text": "À l'exception des affections aiguës ou chroniques, l'exposition au cuivre dans la cuisine est généralement considérée comme inoffensive.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "affections aiguës",
+     "relation": "filter",
+     "dst": "inoffensive(exposition)"
+    }
+   ]
+  },
+  {
+   "sid": "s090",
+   "text": "L'animal atteint voit généralement sa production laitière et son poids décroître, alors que son appétit ne diminue pas.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "décroître(production, poids)",
+     "relation": "opposition",
+     "dst": "ne diminue pas(appétit)"
+    }
+   ]
+  },
+  {
+   "sid": "s091",
+   "text": "Chez les ongulés et les primates, l'adrénaline nocturne, par augmentation d'AMPc, inhibe la protéolyse de l'AA-NAT synthétisée de façon constitutive.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "adrénaline",
+     "relation": "prevent",
+     "dst": "protéolyse"
+    }
+   ]
+  },
+  {
+   "sid": "s092",
+   "text": "Il a utilisé ce terme pour décrire les interactions biochimiques par lesquelles une plante inhibe la croissance des plantes voisines.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "plante",
+     "relation": "prevent",
+     "dst": "croissance(plantes)"
+    }
+   ]
+  },
+  {
+   "sid": "s093",
+   "text": "Le système d'exploitation gère les demandes ainsi que les ressources nécessaires évitant les interférences entre les logiciels.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "système(exploitation)",
+     "relation": "control_dependency",
+     "dst": "demandes(ressources)"
+    }
+   ]
+  },
+  {
+   "sid": "s094",
+   "text": "Notamment, le TGF-β déclenche ces effets variés via un récepteur membranaire commun et un ensemble commun de facteurs de transcription SMAD.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "TGF-β",
+     "relation": "control_dependency",
+     "dst": "effets variés"
+    }
+   ]
+  },
+  {
+   "sid": "s095",
+   "text": "Autour du smic, l’Etat fixe le plancher, détermine le coût du travail par les allègements de cotisations et pilote le revenu disponible par la prime d’activité.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "Etat",
+     "relation": "control_dependency",
+     "dst": "piloter(revenu)"
+    }
+   ]
+  },
+  {
+   "sid": "s096",
+   "text": "Aux États-Unis, bien que le National Organic Program n'autorise pas une utilisation sur les produits biologiques, il n'existe pas de moyens pratiques de vérifier cette interdiction.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "Program",
+     "relation": "control_dependency",
+     "dst": "utilisation(produits)"
+    }
+   ]
+  },
+  {
+   "sid": "s097",
+   "text": "L'engagement des FcR exprimés par les leucocytes déclenche un certain nombre de fonctions proinflammatoires, anti-inflammatoires et immunomodulatrices dans les réponses immunitaires adaptatives de l'hôte conduisant à une protection mais parfois aussi à une maladie.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "engagement(FcR)",
+     "relation": "control_dependency",
+     "dst": "fonctions(réponses)"
+    }
+   ]
+  },
+  {
+   "sid": "s098",
+   "text": "Pour satisfaire les futurs utilisateurs, il est nécessaire d'étudier leurs besoins avant de développer une solution.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "développer(solution)",
+     "relation": "data_dependency",
+     "dst": "étudier(besoins)"
+    }
+   ]
+  },
+  {
+   "sid": "s099",
+   "text": "Les acides gras doivent être activés avant de se fixer à la molécule et ainsi former l'acylcarnitine.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "activés(acides)",
+     "relation": "sequence",
+     "dst": "fixer(former)"
+    }
+   ]
+  },
+  {
+   "sid": "s100",
+   "text": "Les bactéries acidogènes transforment ensuite les sucres et les acides aminés en dioxyde de carbone, hydrogène, ammoniac et acides organiques.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "bactéries acidogènes",
+     "relation": "sequence",
+     "dst": "transforment(sucres)"
+    }
+   ]
+  },
+  {
+   "sid": "s101",
+   "text": "Cette origine germanique a donné en français « sorcrote », attesté en 1739, puis « choucroute », attesté en 1768.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "sorcrote(1739)",
+     "relation": "sequence",
+     "dst": "choucroute(1768)"
+    }
+   ]
+  },
+  {
+   "sid": "s102",
+   "text": "Pour que ces modèles soient non seulement performants mais aussi présentables, ils ont ensuite été entraînés avec la technique de l'IA constitutionnelle.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "performants(présentables)",
+     "relation": "sequence",
+     "dst": "entraînés(modèles)"
+    }
+   ]
+  },
+  {
+   "sid": "s103",
+   "text": "L'analyse de la structure des protéines aux rayons X montre qu'elles sont bâties autour d'un réseau cristallin rigide, qui empêche ou réduit la flexibilité des sous-unités.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "réseau cristallin",
+     "relation": "prevent",
+     "dst": "flexibilité(sous-unités)"
+    }
+   ]
+  },
+  {
+   "sid": "s104",
+   "text": "La berbérine inhibe non seulement fortement la croissance de Porphyromonas gingivalis, mais également la gingipaïne, son facteur principal de virulence dans le processus de destruction du tissu parodontal.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "berbérine",
+     "relation": "prevent",
+     "dst": "croissance(gingipaïne)"
+    }
+   ]
+  },
+  {
+   "sid": "s105",
+   "text": "Contrairement aux modèles d'intelligence artificielle générative purement conversationnels, une IA agentique orchestre en fonction de ses besoins plusieurs « agents intelligents » spécialisés ; à ce titre, elle est rattachée à la famille des systèmes multi‑agents.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "IA agentique",
+     "relation": "control_dependency",
+     "dst": "agents intelligents"
+    }
+   ]
+  },
+  {
+   "sid": "s106",
+   "text": "Une étude retrace les signes précurseurs et explique la mobilité exceptionnelle de cette avalanche, afin de mieux anticiper de telles catastrophes.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "anticiper(catastrophes)",
+     "relation": "motivation",
+     "dst": "retrace(explique)"
+    }
+   ]
+  },
+  {
+   "sid": "s107",
+   "text": "Cependant, le Wellcome Trust britannique finance le Malaria Atlas Project afin de rectifier ceci et d'évaluer le poids de cette maladie à l'avenir.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "rectifier(évaluer)",
+     "relation": "motivation",
+     "dst": "finance(Project)"
+    }
+   ]
+  },
+  {
+   "sid": "s108",
+   "text": "Elle en détermine le déclenchement, la direction, l'intensité et en assure la prolongation jusqu'à l'aboutissement ou l'interruption.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "elle",
+     "relation": "control_dependency",
+     "dst": "déclenchement(direction, intensité)"
+    }
+   ]
+  },
+  {
+   "sid": "s109",
+   "text": "Le système d'information coordonne, grâce à la structuration des échanges, les activités de l'organisation et lui permet ainsi, d'atteindre ses objectifs.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "système(information)",
+     "relation": "control_dependency",
+     "dst": "coordonner(activités)"
+    }
+   ]
+  },
+  {
+   "sid": "s110",
+   "text": "A l’inverse, certains migraineux, certes moins nombreux, parviennent à faire des activités intenses, comme la danse acrobatique ou un marathon, sans en déclencher.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "faire(activités)",
+     "relation": "prevent",
+     "dst": "déclencher(crise)"
+    }
+   ]
+  },
+  {
+   "sid": "s111",
+   "text": "Basé sur un système de quatre engrenages, la rotation d'un index sur un quadrant correspond à 60 rotations d'un autre index sur un quadrant opposé.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "rotation(index)",
+     "relation": "data_dependency",
+     "dst": "système(engrenages)"
+    }
+   ]
+  },
+  {
+   "sid": "s112",
+   "text": "Lorsqu'on implémente les liens dans l'arbre par un réseau informatique, alors ce système de contrôle hiérarchique est également une forme de système de contrôle en réseau.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "implémente(liens)",
+     "relation": "condition",
+     "dst": "système(contrôle)"
+    }
+   ]
+  },
+  {
+   "sid": "s113",
+   "text": "Une fois l'ADNc synthétisé, celui-ci peut être fragmenté davantage de manière à atteindre la longueur de fragment désirée pour le système de séquençage utilisé, comme par exemple la technologie Illumina.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "synthétisé(ADNc)",
+     "relation": "sequence",
+     "dst": "fragmenté(longueur)"
+    }
+   ]
+  },
+  {
+   "sid": "s114",
+   "text": "Un système de contrôle et d’acquisition de données en temps réel (anglais : supervisory control and data acquisition ou SCADA) est un système de télégestion à grande échelle permettant de traiter en temps réel un grand nombre de télémesures et de contrôler à distance des installations techniques.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "SCADA",
+     "relation": "control_dependency",
+     "dst": "contrôler(installations)"
+    }
+   ]
+  },
+  {
+   "sid": "s115",
+   "text": "La dernière version du système de contrôle de signalisation de IECC Scalable DeltaRail utilise MQTT pour les communications entre les différentes parties du système et les composants du système de signalisation.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "système(contrôle)",
+     "relation": "control_dependency",
+     "dst": "communications(parties)"
+    }
+   ]
+  },
+  {
+   "sid": "s116",
+   "text": "Accès aux ressources Une des fonctions du système d'exploitation est de protéger les ressources contre l'utilisation par des personnes non autorisées, et de résoudre les conflits lorsque deux utilisateurs demandent simultanément la même ressource.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "protéger(ressources)",
+     "relation": "prevent",
+     "dst": "utilisation(personnes)"
+    }
+   ]
+  },
+  {
+   "sid": "s117",
+   "text": "Ces institutions se coordonnent pour gérer les grandes bases de données de séquences nucléotidiques comme GenBank ou l'EMBL database, ainsi que les bases de données de séquences protéiques comme UniProt ou TrEMBL (cf. liens en fin d'article).",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "institutions",
+     "relation": "control_dependency",
+     "dst": "gérer(bases)"
+    }
+   ]
+  },
+  {
+   "sid": "s118",
+   "text": "RÉCIT - Les autorités sanitaires ont tardé à lancer l’alerte après les premiers cas de la fièvre hémorragique, alors que la faiblesse du système de santé congolais et les conflits armés dans la région touchée compliquent énormément la situation.",
+   "lang": "fr",
+   "triplets": [
+    {
+     "src": "tardé(lancer)",
+     "relation": "opposition",
+     "dst": "compliquent(situation)"
+    }
+   ]
+  },
+  {
+   "sid": "s001",
+   "text": "And it's salty enough because we have the AMOC.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "AMOC",
+     "relation": "cause",
+     "dst": "salty"
+    }
+   ]
+  },
+  {
+   "sid": "s002",
+   "text": "That monitoring gap matters because the physical landscape is changing rapidly.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "changing(landscape)",
+     "relation": "cause",
+     "dst": "gap matters"
+    }
+   ]
+  },
+  {
+   "sid": "s003",
+   "text": "“I drank the bleach because I wanted to die,” she said.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "wanted to die",
+     "relation": "cause",
+     "dst": "drank(bleach)"
+    }
+   ]
+  },
+  {
+   "sid": "s004",
+   "text": "That matters because clouds are bright, while the ocean beneath them is dark.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "clouds bright",
+     "relation": "cause",
+     "dst": "matters"
+    },
+    {
+     "src": "clouds bright",
+     "relation": "opposition",
+     "dst": "ocean dark"
+    }
+   ]
+  },
+  {
+   "sid": "s005",
+   "text": "They are declining globally due to pressures including pollution, coastal development and the climate emergency.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "pressures(pollution)",
+     "relation": "cause",
+     "dst": "declining"
+    }
+   ]
+  },
+  {
+   "sid": "s006",
+   "text": "It's a horrible disease and causes them ulcers and blindness.\" So what solutions are available?",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "disease",
+     "relation": "cause",
+     "dst": "ulcers(blindness)"
+    }
+   ]
+  },
+  {
+   "sid": "s007",
+   "text": "But not moving out of degraded habitat also means they are more likely to die, he says.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "not moving(habitat)",
+     "relation": "cause",
+     "dst": "likely to die"
+    }
+   ]
+  },
+  {
+   "sid": "s008",
+   "text": "Because the babies were only a day or so old it is unlikely the effect was driven by culture or social experience.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "babies young",
+     "relation": "cause",
+     "dst": "unlikely driven"
+    }
+   ]
+  },
+  {
+   "sid": "s009",
+   "text": "As in Colombia, in Brazil most of the cases the group documented were primarily driven by conflict over land, Global Witness's researchers found.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "conflict(land)",
+     "relation": "cause",
+     "dst": "cases documented"
+    }
+   ]
+  },
+  {
+   "sid": "s010",
+   "text": "The UK government has said that, as \"a key component within the Earth's climate system\" the AMOC contributes to the UK's long-term climate risks.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "AMOC",
+     "relation": "cause",
+     "dst": "climate risks"
+    }
+   ]
+  },
+  {
+   "sid": "s011",
+   "text": "Solar power has seen dramatic cost reductions thanks to mass production.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "mass production",
+     "relation": "enable",
+     "dst": "cost reductions"
+    }
+   ]
+  },
+  {
+   "sid": "s012",
+   "text": "What simple trick allows sorters to catch all of the good ones and none of the bad?",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "trick",
+     "relation": "enable",
+     "dst": "catch(sorters)"
+    }
+   ]
+  },
+  {
+   "sid": "s013",
+   "text": "That can create a feedback: warming reduces some cloud cover, which allows more sunlight in, which produces still more warming.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "warming reduces",
+     "relation": "enable",
+     "dst": "allows sunlight"
+    }
+   ]
+  },
+  {
+   "sid": "s014",
+   "text": "It makes it much easier to see writing, such as name badges, and allows much improved digital zoom up to 10x magnification.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "it",
+     "relation": "enable",
+     "dst": "see(zoom)"
+    }
+   ]
+  },
+  {
+   "sid": "s015",
+   "text": "That allows Oura to comprehensively log and analyse your general health as well as the best smartwatches, but without the bulk of other wearables.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "Oura",
+     "relation": "enable",
+     "dst": "log(analyse)"
+    }
+   ]
+  },
+  {
+   "sid": "s016",
+   "text": "Opened up, the internal screen is essentially square, which allows you to run two full-size apps side by side but is less ideal for video.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "screen",
+     "relation": "enable",
+     "dst": "run(apps)"
+    }
+   ]
+  },
+  {
+   "sid": "s017",
+   "text": "The wide 140-degree square field of view allows you to see head to toe of visitors, even when they stand right in front of the door.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "field of view",
+     "relation": "enable",
+     "dst": "see(visitors)"
+    }
+   ]
+  },
+  {
+   "sid": "s018",
+   "text": "First, it restores habitat by planting a variety of native trees and other plants, or in some places simply allows the vegetation to regenerate on its own.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "restores(planting)",
+     "relation": "enable",
+     "dst": "regenerate(vegetation)"
+    }
+   ]
+  },
+  {
+   "sid": "s019",
+   "text": "Despite his toppling and imprisonment, Khan still remains popular.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "toppling(imprisonment)",
+     "relation": "concession",
+     "dst": "popular(Khan)"
+    }
+   ]
+  },
+  {
+   "sid": "s020",
+   "text": "Despite the flooding, 250 people managed to finish the race.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "flooding",
+     "relation": "concession",
+     "dst": "finish(race)"
+    }
+   ]
+  },
+  {
+   "sid": "s021",
+   "text": "Given that a robot recently beat Usain Bolt's 100m sprint record, it's not the most startling achievement.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "beat(record)",
+     "relation": "concession",
+     "dst": "not startling"
+    }
+   ]
+  },
+  {
+   "sid": "s022",
+   "text": "“We don’t win if we develop the killer robots first.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "develop robots first",
+     "relation": "condition",
+     "dst": "don't win"
+    }
+   ]
+  },
+  {
+   "sid": "s023",
+   "text": "Black bears are by nature not particularly aggressive unless they are put in a dangerous or threatening situation, but they can cause damage.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "put in situation",
+     "relation": "condition",
+     "dst": "not aggressive"
+    },
+    {
+     "src": "not aggressive",
+     "relation": "concession",
+     "dst": "cause damage"
+    }
+   ]
+  },
+  {
+   "sid": "s024",
+   "text": "She could get through the conversation with her mother without tears, she said, “but whenever I talk to my daddy, I’ll be crying.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "talk to daddy",
+     "relation": "condition",
+     "dst": "crying"
+    }
+   ]
+  },
+  {
+   "sid": "s025",
+   "text": "“Things decay, batteries run out, balls roll downhill, we grow older, your children’s bedroom gets more messy, not more tidy – unless you intervene,” he said.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "intervene",
+     "relation": "condition",
+     "dst": "decay(messy)"
+    }
+   ]
+  },
+  {
+   "sid": "s026",
+   "text": "But as long as none of the potential successors appears ready to wield the dagger, and Merz remains unwilling to step aside, a volatile deadlock will reign.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "successors ready",
+     "relation": "condition",
+     "dst": "deadlock reign"
+    }
+   ]
+  },
+  {
+   "sid": "s027",
+   "text": "But since the machine doesn’t come with a charger in the UK and EU, the Surface Connect port is essentially useless unless you buy Microsoft’s £80 power supply.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "buy supply",
+     "relation": "condition",
+     "dst": "useless(port)"
+    }
+   ]
+  },
+  {
+   "sid": "s028",
+   "text": "China first brought in controls on rare earth exports in April 2025, hitting the auto industries in the EU, UK, US and Japan hard.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "China",
+     "relation": "control_dependency",
+     "dst": "controls(exports)"
+    },
+    {
+     "src": "controls(exports)",
+     "relation": "cause",
+     "dst": "hitting(industries)"
+    }
+   ]
+  },
+  {
+   "sid": "s029",
+   "text": "But their challenge is long-term, as China controls between 80% and 90% of the world’s raw materials and processed end products, giving it powerful leverage over global manufacturing.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "China",
+     "relation": "control_dependency",
+     "dst": "controls(materials)"
+    },
+    {
+     "src": "controls(materials)",
+     "relation": "cause",
+     "dst": "leverage"
+    }
+   ]
+  },
+  {
+   "sid": "s030",
+   "text": "Typhoon Dujuan tracking close to Tokyo triggers rare evacuation alert Related topics - Severe weatherUpdates from your News topics will appear in My News and in a collection on the News homepage.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "tracking(typhoon)",
+     "relation": "control_dependency",
+     "dst": "triggers(alert)"
+    }
+   ]
+  },
+  {
+   "sid": "s031",
+   "text": "The AMOC depends on dense water sinking in the high North Atlantic.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "AMOC",
+     "relation": "data_dependency",
+     "dst": "sinking(water)"
+    }
+   ]
+  },
+  {
+   "sid": "s032",
+   "text": "Reducing emissions therefore depends on persuading people to switch to electric technologies such as heat pumps and electric vehicles.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "reducing(emissions)",
+     "relation": "data_dependency",
+     "dst": "persuading(switch)"
+    }
+   ]
+  },
+  {
+   "sid": "s033",
+   "text": "It really depends on what the sharks tell us.” During tagging, the team plan to take DNA samples from the sharks.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "it",
+     "relation": "data_dependency",
+     "dst": "tell(sharks)"
+    }
+   ]
+  },
+  {
+   "sid": "s034",
+   "text": "Almost every UK police force now depends on Microsoft Azure, and the UK government spends at least £1.9bn on Microsoft software each year.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "police force",
+     "relation": "data_dependency",
+     "dst": "Azure"
+    }
+   ]
+  },
+  {
+   "sid": "s035",
+   "text": "And Knutti says that imbalance has roughly tripled over the past two decades - although the precise increase depends on which years are compared.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "imbalance tripled",
+     "relation": "data_dependency",
+     "dst": "depends(years)"
+    },
+    {
+     "src": "depends(years)",
+     "relation": "concession",
+     "dst": "imbalance tripled"
+    }
+   ]
+  },
+  {
+   "sid": "s036",
+   "text": "But the narrative that Europe is grievously behind in the race depends on a particular view of artificial intelligence aggressively promoted by American tech bosses.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "narrative",
+     "relation": "data_dependency",
+     "dst": "view(AI)"
+    }
+   ]
+  },
+  {
+   "sid": "s037",
+   "text": "China, for example, still relies on coal for more than half of its energy, meaning emissions simply have shifted abroad rather than been reduced altogether.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "China",
+     "relation": "data_dependency",
+     "dst": "relies(coal)"
+    }
+   ]
+  },
+  {
+   "sid": "s038",
+   "text": "But the ring relies on your phone for tracking distance, pace and your route, for instance, and is not as capable as a Garmin or similar running watch.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "ring",
+     "relation": "data_dependency",
+     "dst": "tracking(phone)"
+    }
+   ]
+  },
+  {
+   "sid": "s039",
+   "text": "\"We can restore habitats on a much bigger scale, making more of a difference to the wildlife that relies on these places to live, feed and breed,\" Sim added.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "wildlife",
+     "relation": "data_dependency",
+     "dst": "places"
+    }
+   ]
+  },
+  {
+   "sid": "s040",
+   "text": "The AMOC depends on deep water forming in a handful of places in the North Atlantic - including the Labrador Sea, the Greenland Sea and waters south of Iceland.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "AMOC",
+     "relation": "data_dependency",
+     "dst": "forming(water)"
+    }
+   ]
+  },
+  {
+   "sid": "s041",
+   "text": "The lawyers managed to get the other two women off the plane, but not Nika.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "get off(women)",
+     "relation": "filter",
+     "dst": "Nika"
+    }
+   ]
+  },
+  {
+   "sid": "s042",
+   "text": "Until now, scientists have almost exclusively documented these epimeletic behaviours towards deceased calves in toothed whales.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "documented(behaviours)",
+     "relation": "filter",
+     "dst": "calves"
+    }
+   ]
+  },
+  {
+   "sid": "s043",
+   "text": "“Rather than relying solely on fenced protected areas, these findings reinforce the value of investing in connected landscapes.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "investing(landscapes)",
+     "relation": "filter",
+     "dst": "fenced areas"
+    }
+   ]
+  },
+  {
+   "sid": "s044",
+   "text": "In other words, it aims to keep it on track with what humans value.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "humans value",
+     "relation": "motivation",
+     "dst": "aims(keep)"
+    }
+   ]
+  },
+  {
+   "sid": "s045",
+   "text": "Alignment is a field which aims to build human ethical ideas and principles into AI.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "build(ideas)",
+     "relation": "motivation",
+     "dst": "Alignment(field)"
+    }
+   ]
+  },
+  {
+   "sid": "s046",
+   "text": "The French government wants his release in order to facilitate the release of French nationals in Azerbaijan.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "facilitate(release)",
+     "relation": "motivation",
+     "dst": "wants(release)"
+    }
+   ]
+  },
+  {
+   "sid": "s047",
+   "text": "He says the company aims to provide about 80% of the heat needed for a home’s hot water.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "needed(water)",
+     "relation": "motivation",
+     "dst": "aims(provide)"
+    }
+   ]
+  },
+  {
+   "sid": "s048",
+   "text": "Do they have to call for 20 minutes or 10 minutes or in order to achieve their goal?” Reichard says.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "goal",
+     "relation": "motivation",
+     "dst": "call(minutes)"
+    }
+   ]
+  },
+  {
+   "sid": "s049",
+   "text": "The government has an ongoing consultation which aims to judge any expansion against four tests - economy, climate, air quality and noise.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "judge(expansion)",
+     "relation": "motivation",
+     "dst": "consultation"
+    }
+   ]
+  },
+  {
+   "sid": "s050",
+   "text": "They indicate that $30m was earmarked for Cameroon, in order to support UN operations in the country, in return for accepting 1,000 migrants.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "support(accepting)",
+     "relation": "motivation",
+     "dst": "earmarked($30m)"
+    }
+   ]
+  },
+  {
+   "sid": "s051",
+   "text": "But even before there were clear consumer use cases for more rudimentary versions of the technology, both Musk and Altman were already motivated by competition.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "motivated(Musk, Altman)",
+     "relation": "motivation",
+     "dst": "competition"
+    }
+   ]
+  },
+  {
+   "sid": "s052",
+   "text": "It means two distinct sleep periods in 24 hours instead of one.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "two periods",
+     "relation": "opposition",
+     "dst": "one"
+    }
+   ]
+  },
+  {
+   "sid": "s053",
+   "text": "Climate change is serious, he wrote, but \"will not lead to humanity's demise\".",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "serious",
+     "relation": "opposition",
+     "dst": "no demise"
+    }
+   ]
+  },
+  {
+   "sid": "s054",
+   "text": "“Most phishing attacks are designed to point people to links these days instead of downloading attachments.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "point(links)",
+     "relation": "opposition",
+     "dst": "downloading"
+    }
+   ]
+  },
+  {
+   "sid": "s055",
+   "text": "“A fake site might use the Cyrillic “с” instead of the Latin “c” (miсrosoft v microsoft),” he says.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "use(Cyrillic)",
+     "relation": "opposition",
+     "dst": "Latin c"
+    }
+   ]
+  },
+  {
+   "sid": "s056",
+   "text": "The projected underlying cash deficit with lower population growth is 2.4% in 2065-66, instead of 1.8% under the existing assumptions.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "deficit 2.4%",
+     "relation": "opposition",
+     "dst": "1.8%"
+    }
+   ]
+  },
+  {
+   "sid": "s057",
+   "text": "I entered a tree-like state.\" She still can't walk very much, she adds, but \"the tree helped bring me back out into life again.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "can't walk",
+     "relation": "opposition",
+     "dst": "helped bring back"
+    }
+   ]
+  },
+  {
+   "sid": "s058",
+   "text": "The power of these companies is hard to challenge, but ultimately the better aim might be a resilient internet ecosystem, as opposed to a splinternet.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "challenge",
+     "relation": "opposition",
+     "dst": "ecosystem"
+    }
+   ]
+  },
+  {
+   "sid": "s059",
+   "text": "Replications in different contexts (such as hockey games instead of car crashes) have shown that different scenarios require different framing effects to produce differing memories.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "hockey games",
+     "relation": "opposition",
+     "dst": "car crashes"
+    }
+   ]
+  },
+  {
+   "sid": "s060",
+   "text": "This is time-limited to make duping or sharing the QR code more difficult.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "time-limited",
+     "relation": "prevent",
+     "dst": "duping(sharing)"
+    }
+   ]
+  },
+  {
+   "sid": "s061",
+   "text": "It is to be distinguished from the Plummer effect, which inhibits the proteolysis of thyroglobulin and the release of pre-formed thyroid hormones from follicles.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "Plummer effect",
+     "relation": "prevent",
+     "dst": "proteolysis(release)"
+    }
+   ]
+  },
+  {
+   "sid": "s062",
+   "text": "But it did not prevent the collision, which, in an industry with the money and the trajectory software to do otherwise, is probably a choice all the same.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "it",
+     "relation": "prevent",
+     "dst": "collision"
+    }
+   ]
+  },
+  {
+   "sid": "s063",
+   "text": "Females with bulimia may also experience amenorrhea, although the cause is not clear.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "amenorrhea",
+     "relation": "concession",
+     "dst": "cause unclear"
+    }
+   ]
+  },
+  {
+   "sid": "s064",
+   "text": "The PlayStation VR2 for example has incredible OLED displays, albeit without the pancake lenses.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "PSVR displays",
+     "relation": "concession",
+     "dst": "without lenses"
+    }
+   ]
+  },
+  {
+   "sid": "s065",
+   "text": "Despite his vow to stay the course, many saw the German leader on borrowed time.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "vow(stay)",
+     "relation": "concession",
+     "dst": "borrowed time"
+    }
+   ]
+  },
+  {
+   "sid": "s066",
+   "text": "Although they will slightly shift their habitat in response, they are still more likely to die.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "shift(habitat)",
+     "relation": "concession",
+     "dst": "likely to die"
+    }
+   ]
+  },
+  {
+   "sid": "s067",
+   "text": "The code of official conduct prohibits House members from engaging in sexual relationships with employees under their supervision, or the committees on which they serve, unless a couple is married.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "couple married",
+     "relation": "condition",
+     "dst": "prohibits relationships"
+    }
+   ]
+  },
+  {
+   "sid": "s068",
+   "text": "“The scientific aspect is important because it’s very difficult to understand how the ocean temperature is changing 300 metres below the surface unless you have particular instruments that you can deploy to measure those changes.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "have instruments",
+     "relation": "condition",
+     "dst": "understand(temperature)"
+    }
+   ]
+  },
+  {
+   "sid": "s069",
+   "text": "Windows on ARM has far fewer compatibility problems than before, which means that unless you know you need an x86 Intel or AMD chip for certain apps or games, you probably won’t notice the difference.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "need chip",
+     "relation": "condition",
+     "dst": "won't notice"
+    }
+   ]
+  },
+  {
+   "sid": "s070",
+   "text": "Likewise, the top section (excluding the very top and middle of the tank) must fall on the shaded cross section above centre.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "fall(section)",
+     "relation": "filter",
+     "dst": "top/middle excluded"
+    }
+   ]
+  },
+  {
+   "sid": "s071",
+   "text": "Apart from gold, the state of Niger sits on deposits of other minerals including tantalite, copper and lithium, which are in strong demand for use in electric vehicles and clean energy technology.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "deposits(minerals)",
+     "relation": "filter",
+     "dst": "gold"
+    }
+   ]
+  },
+  {
+   "sid": "s072",
+   "text": "The survey asked the question, \"About how fast were the cars going when they smashed into each other?\" The question always asked the same thing, except the verb used to describe the collision varied.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "asked(question)",
+     "relation": "filter",
+     "dst": "verb varied"
+    }
+   ]
+  },
+  {
+   "sid": "s073",
+   "text": "It agreed to pay $12.7bn and implement a two-hour daily limit for teen users across its platforms by default, in addition to muted notifications during school hours, blocks at night and other measures.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "implement(limit, blocks)",
+     "relation": "prevent",
+     "dst": "teen use(night)"
+    }
+   ]
+  },
+  {
+   "sid": "s074",
+   "text": "The Wolff–Chaikoff effect is known as an autoregulatory phenomenon that inhibits organification in the thyroid gland, the formation of thyroid hormones inside the thyroid follicle, and the release of thyroid hormones into the bloodstream.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "Wolff-Chaikoff effect",
+     "relation": "prevent",
+     "dst": "organification(hormones)"
+    }
+   ]
+  },
+  {
+   "sid": "s075",
+   "text": "However, recent research into the study shows that the thyroid hormone levels of the rats were not checked prior to injections.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "levels(checked)",
+     "relation": "sequence",
+     "dst": "injections"
+    }
+   ]
+  },
+  {
+   "sid": "s076",
+   "text": "And while Meta had removed the ads for breaching its own rules prior to the ASA's action, the social media giant has faced prior scrutiny over similar ads appearing on its platforms.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "removed(ads)",
+     "relation": "sequence",
+     "dst": "scrutiny"
+    }
+   ]
+  },
+  {
+   "sid": "s077",
+   "text": "Ukip Wales subsequently suffered a split in 2016, while a previous leader of Reform in Wales, Nathan Gill, was jailed last year for taking bribes to make statements in favour of Russia when he was an MEP.",
+   "lang": "en",
+   "triplets": [
+    {
+     "src": "split(Ukip)",
+     "relation": "sequence",
+     "dst": "jailed(Gill)"
+    }
+   ]
+  },
+  {
+   "sid": "s001",
+   "text": "Es más eficaz cuando se toma antes de las comidas.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "toma(antes)",
+     "relation": "condition",
+     "dst": "eficaz"
+    }
+   ]
+  },
+  {
+   "sid": "s002",
+   "text": "La norma jurídica toma esta forma: S→C si S, entonces C.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "S",
+     "relation": "condition",
+     "dst": "C"
+    }
+   ]
+  },
+  {
+   "sid": "s003",
+   "text": "En Corea, el ratio aumentó un 13-21% y, luego, al 40%.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "ratio 13-21%",
+     "relation": "sequence",
+     "dst": "ratio 40%"
+    }
+   ]
+  },
+  {
+   "sid": "s004",
+   "text": "Normas dispositivas: Obligan cuando no existe una voluntad expresa en contrario del individuo.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "obligan",
+     "relation": "opposition",
+     "dst": "voluntad en contrario"
+    }
+   ]
+  },
+  {
+   "sid": "s005",
+   "text": "Para que exista una relación real tiene que haber al menos dos sujetos.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "exista relación",
+     "relation": "condition",
+     "dst": "dos sujetos"
+    }
+   ]
+  },
+  {
+   "sid": "s006",
+   "text": "Sin embargo, el país se recuperó del hundimiento financiero del 98 con sorprendente velocidad.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "hundimiento",
+     "relation": "concession",
+     "dst": "recuperó"
+    }
+   ]
+  },
+  {
+   "sid": "s007",
+   "text": "Dichas normas imponen deberes y crean obligaciones, mientras que las secundarias pueden ser públicas o privadas.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "imponen(deberes)",
+     "relation": "opposition",
+     "dst": "secundarias"
+    }
+   ]
+  },
+  {
+   "sid": "s008",
+   "text": "Este cambio conformacional activa el sitio quinasa inactivo de cada RTK sobre un residuo de tirosina.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "cambio conformacional",
+     "relation": "control_dependency",
+     "dst": "activa(sitio)"
+    }
+   ]
+  },
+  {
+   "sid": "s009",
+   "text": "Solamente son ambos términos equivalentes cuando la acción de juzgar la desarrollan órganos investidos de potestad jurisdiccional.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "términos equivalentes",
+     "relation": "filter",
+     "dst": "desarrollan(órganos)"
+    }
+   ]
+  },
+  {
+   "sid": "s010",
+   "text": "Condiciones materiales En las condiciones materiales, se refiere a lo que la norma prohíbe, manda o permite.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "norma",
+     "relation": "prevent",
+     "dst": "prohíbe(manda, permite)"
+    }
+   ]
+  },
+  {
+   "sid": "s011",
+   "text": "De esta forma se evita el problema del cuello de botella que ocurría en la arquitectura centralizada.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "evita",
+     "relation": "prevent",
+     "dst": "problema(cuello)"
+    }
+   ]
+  },
+  {
+   "sid": "s012",
+   "text": "Las células representan únicamente el 2 % del tejido, mientras que la matriz extracelular es el 98 %.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "células 2%",
+     "relation": "opposition",
+     "dst": "matriz 98%"
+    }
+   ]
+  },
+  {
+   "sid": "s013",
+   "text": "Usualmente la doctrina indica que son actos jurídicos solamente los típicos o formales previstos y descritos explícitamente por la ley.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "actos jurídicos",
+     "relation": "filter",
+     "dst": "típicos(formales)"
+    }
+   ]
+  },
+  {
+   "sid": "s014",
+   "text": "Durante el verano de 1971, Nixon estaba bajo una fuerte presión pública para que actuara de forma tajante ante este estancamiento económico.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "actuara",
+     "relation": "motivation",
+     "dst": "presión pública"
+    }
+   ]
+  },
+  {
+   "sid": "s015",
+   "text": "Para que los factores paracrinos puedan inducir una respuesta en la célula receptora, esta debe poseer los receptores adecuados en la membrana celular.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "inducir(respuesta)",
+     "relation": "motivation",
+     "dst": "poseer(receptores)"
+    }
+   ]
+  },
+  {
+   "sid": "s016",
+   "text": "Este fenómeno no se desencadena hasta que la semilla no ha sido transportada hasta un medio favorable por alguno de los agentes de dispersión.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "transportada(semilla)",
+     "relation": "control_dependency",
+     "dst": "desencadena(fenómeno)"
+    },
+    {
+     "src": "transportada(semilla)",
+     "relation": "condition",
+     "dst": "desencadena(fenómeno)"
+    }
+   ]
+  },
+  {
+   "sid": "s017",
+   "text": "Las normas secundarias se introducen para remediar los defectos que padece o que tiene un sistema de derecho en el cual haya normas primarias solamente.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "remediar(defectos)",
+     "relation": "motivation",
+     "dst": "introducen(normas)"
+    }
+   ]
+  },
+  {
+   "sid": "s018",
+   "text": "Una de sus ventajas es el hecho de no inhibir la secreción ácida en el estómago lo que evita las infecciones ascendentes de la orofaringe.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "no inhibir(secreción)",
+     "relation": "prevent",
+     "dst": "evita(infecciones)"
+    }
+   ]
+  },
+  {
+   "sid": "s019",
+   "text": "Puede ser preparado manualmente por asesores humanos (o raters, como Google les llama), quienes comprueban resultados para algunas consultas y determinan la relevancia de cada resultado.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "asesores",
+     "relation": "control_dependency",
+     "dst": "determinan(relevancia)"
+    }
+   ]
+  },
+  {
+   "sid": "s020",
+   "text": "Si la función a optimizar contiene varios puntos muy cercanos en valor al óptimo, solamente podemos \"asegurar\" que encontraremos uno de ellos (no necesariamente el óptimo).",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "asegurar(encontraremos)",
+     "relation": "filter",
+     "dst": "óptimo"
+    }
+   ]
+  },
+  {
+   "sid": "s021",
+   "text": "Hoy en día no se puede mantener esta tesis, habida cuenta del monopolio estatal sobre la jurisdicción, que impide considerar al proceso como algo propio del ámbito privado.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "monopolio",
+     "relation": "prevent",
+     "dst": "considerar(proceso)"
+    }
+   ]
+  },
+  {
+   "sid": "s022",
+   "text": "Descripción Echinopsis oligotricha es una especie de cactus pequeño, de crecimiento bajo, que por lo general presenta un porte solitario, salvo cuando sufre daños que favorecen la brotación lateral.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "porte solitario",
+     "relation": "filter",
+     "dst": "sufre daños"
+    }
+   ]
+  },
+  {
+   "sid": "s023",
+   "text": "La liberación de esta hormona está determinada principalmente durante dos momentos de la vida de la mujer: en el momento del parto, en donde produce la contracción uterina, que evita una hemorragia posparto, y durante la succión del lactante, donde favorece el aumento de tamaño de la glándula mamaria y la producción de leche.",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "contracción uterina",
+     "relation": "prevent",
+     "dst": "hemorragia"
+    }
+   ]
+  },
+  {
+   "sid": "s024",
+   "text": "Una característica principal es que tienen lugar entre sujeto y sujeto ,como si ocurre con las relaciones de hecho .Incluso hay quienes la considera un nombre más para el propio supuesto de la ley misma tiempo que protege sus derechos subjetivos políticos y sociales .Las relaciones jurídicas pueden ser públicos o privados dependiendo de su fin .",
+   "lang": "es",
+   "triplets": [
+    {
+     "src": "ley",
+     "relation": "prevent",
+     "dst": "derechos"
+    }
+   ]
+  }
+ ]
+}

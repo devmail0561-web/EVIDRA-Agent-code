@@ -10,54 +10,14 @@ import pytest
 
 gcn_python = pytest.importorskip("gcn_python", reason="moteur non importable")
 
-from gcn_python.constants import NODE_TYPES, RELATION_TYPES, rgcn_n_relations
-from gcn_python.engine import GCNEngine
-from gcn_python.layer1.embedding import WordEmbedding
-from gcn_python.layer1.features import FeatureVocabulary
-from gcn_python.layer1.representation import UDRepresentation
-from gcn_python.layer2.reference import MLPEncoder
-from gcn_python.layer3.reference import RGCNLayer
-from gcn_python.pipeline.cgnp import CGNPipeline
-
 from evidra.engine_bridge.extract import extraire
 from evidra.engine_bridge.moteur import Moteur
 from evidra.kernel.contracts import Status
-
-
-def _rep(lemma: str, i: int) -> UDRepresentation:
-    return UDRepresentation(
-        tokens=[{"lemma": lemma, "pos": "VERB", "dep_rel": "root", "morph": {}}],
-        root_lemma=lemma,
-        root_pos="VERB",
-        root_dep_rel="root",
-        root_morph={},
-        subject_pos=None,
-        has_object=False,
-        has_advcl=False,
-        has_temporal_obl=False,
-        token_span=(i, i + 1),
-    )
-
-
-class _StubParser:
-    def parse(self, text: str):
-        return [_rep("clause-a", 0), _rep("clause-b", 1)], [None]
+from tests.essai import moteur_essai
 
 
 def test_moteur_reel_satisfait_contrat_et_produit() -> None:
-    vocab = FeatureVocabulary()
-    embedding = WordEmbedding(d_emb=4, seed=42)
-    d_eff = vocab.d_clause_effective(embedding.d_emb)
-    d_edge = vocab.d_edge_closed_loop(d_eff, len(NODE_TYPES), embedding.d_emb)
-    pipeline = CGNPipeline(
-        encoder=MLPEncoder(d_clause=d_eff, d_edge=d_edge),
-        graph=RGCNLayer(
-            d_in=d_eff, d_out=d_eff, n_relations=rgcn_n_relations(len(RELATION_TYPES), False)
-        ),
-        vocabulary=vocab,
-        word_embedding=embedding,
-    )
-    moteur = GCNEngine(pipeline, text_parser=_StubParser())
+    moteur, _reelle = moteur_essai()
     assert isinstance(moteur, Moteur)
     recu = extraire(
         ["Les ventes baissent donc les prix augmentent."], moteur=moteur, timeout_s=30.0

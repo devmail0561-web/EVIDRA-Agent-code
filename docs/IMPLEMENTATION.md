@@ -1,6 +1,6 @@
-# Evidra (SA) — Journal d'implémentation (T0 → T3.6)
+# Evidra (SA) — Journal d'implémentation (T0 → T3.9, J3 clos)
 
-> Exhaustif, détaillé, concis. État au 2026-10-12, commit `1b02592` (+ T3.8 ci-dessous, à commiter).
+> Exhaustif, détaillé, concis. État au 2026-10-12 (J3 clos, voir §13).
 > Source de conception : `ETUDE_SA.md` (30 sections). Plan : `PLAN_SA.md` (+ patchs P1–P7 appliqués).
 > Dépôt : `devmail0561-web/EVIDRA-Agent-code`, branche `main`. Moteur : `gcn-python 4.0.0` @ `20163da` (branche refacto non mergée, cf. `engine-compat.md`).
 
@@ -11,7 +11,7 @@
 | 0 — Scaffolding | J0 ✅ | T0.1–T0.7 | Vert (CI équivalent local) |
 | 1 — Noyau harness | J1 ✅ | T1.1–T1.7 | Vert : 498/500 SLOC, mypy strict, 0 dépendance noyau→mémoire/outils/moteur |
 | 2 — Mémoire | J2 ✅ | T2.1–T2.8 | Vert : crash sans perte, compaction éprouvée, index≡scan, SLO mesurés |
-| 3 — Pont moteur | J3 ⏳ | T3.1–T3.8 ✅, T3.9 ❌ | Reste : tranche verticale gold-219 |
+| 3 — Pont moteur | J3 ✅ | T3.1–T3.9 | Clos : dogfood offline + 5 nombres écrits |
 | 4–10 | — | — | Non commencées |
 
 Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **186 tests**, tous verts.
@@ -74,7 +74,7 @@ Dépendances : `kernel` ← `memory`, `tools`, `engine_bridge` (jamais l'inverse
 - **T3.4** — `sous_graphe.decouper()` : BFS exact (pas de repli lexical), profondeur 2, plafonds **500/2000 = MAX_NODES/MAX_EDGES constatés**, coupe arête-complète (un nœud coupé fait sauter son arête — sinon le matérialisé dépasse quand même), `tronque` explicite. Acceptation : 100k arêtes → moteur ≤ plafonds.
 - **T3.5** — `reason.py`/`validate.py` : `raisonner_chaine` (budget en argument, worker, OK/DEGRADE/FAILED, preuves vérifiées + confiance min, profondeur via T3.4 / top-k TOPK=5 interne documentés) ; `verifier_lien` (`reason` + `verify_path` public, `min_conf` transmise, pas de preuve = DEGRADE jamais FAILED). `derived` marqués `ingestible: False` + test contrat miroir T3.6 (zéro ingéré). Constats : statuts `ok`/`degrade` moteur.
 - **T3.6** — `memory/memoire.py` (`Memoire` par domaine : une entité par triplet — première observation gardée —, `vues`, index ; `observer()` nouvelle/confirmation/idempotente via `confirmer`, alias passe-plat, `appliquer_domaine` strict + rebuild tolérant) ; `tools/ingest.py` (`OutilIngest` Tool+manifeste, porte `can()` → `refused` sans effet, seuils directive, drops par motif → DEGRADE, `trace_ref` seq WAL, entry-point déclaré et chargeable). Règles tranchées : entité count=1 à la création, même clé → idempotent (sans WAL), même triplet autre clé → confirmation, drops au reçu seul (cohérent T1.4), `seq_depart` possédé par le Store. Décisions reportées : mapping `min_extraction_method`→ensemble en T4.1, fiabilité T6.3 (0.5 neutre ici).
-- Reste J3 : **T3.7** (`local_files` : mtime+hash, curseur, Token/CodeSpan, lecture seule ADR-0011), **T3.8** (dogfood `code` offline + job), **T3.9** (tranche verticale gold-219, 5 nombres — fichier source des 219 phrases à localiser).
+- J3 clos : **T3.7** (`local_files`), **T3.8** (dogfood `code` offline + job), **T3.9** (tranche verticale, 5 nombres écrits — voir §13).
 
 ## 7. Invariants I1–I12 : état d'application
 
@@ -95,7 +95,7 @@ Dépendances : `kernel` ← `memory`, `tools`, `engine_bridge` (jamais l'inverse
 
 ## 8. Patchs P1–P7 : état
 
-P1 (reçus : mutation seule, no-op zéro écriture) ✅ appliqué au plan (à faire respecter en T4.4) · P2 (T3.9 tranche verticale) ✅ planifié, non exécuté (bloqué : fichier gold-219) · P3 (worker+timeout) ✅ appliqué (travailleur, scheduler, coquilles) · P4 (published_at/hash/label-brut) ✅ appliqué (enveloppe, provenance, alias passe-plat) · P5 (nonce/ts, clés, directive signée, rétention §17.6, anti-ReDoS, lignage) ⏳ phases 7–9 · P6 (table opposition §5, déclencheur UNCONFIRMED, étiquetage counterfactual) ⏳ T5.3/T5.5 · P7 (noisy-OR, premier-rapporteur) ⏳ phase 10 (B3).
+P1 (reçus : mutation seule, no-op zéro écriture) ✅ appliqué au plan (à faire respecter en T4.4) · P2 (T3.9 tranche verticale) ✅ exécuté (fixture + 5 nombres, voir §13) · P3 (worker+timeout) ✅ appliqué (travailleur, scheduler, coquilles) · P4 (published_at/hash/label-brut) ✅ appliqué (enveloppe, provenance, alias passe-plat) · P5 (nonce/ts, clés, directive signée, rétention §17.6, anti-ReDoS, lignage) ⏳ phases 7–9 · P6 (table opposition §5, déclencheur UNCONFIRMED, étiquetage counterfactual) ⏳ T5.3/T5.5 · P7 (noisy-OR, premier-rapporteur) ⏳ phase 10 (B3).
 
 ## 9. Constats moteur (vérifiés, pas supposés)
 
@@ -105,7 +105,7 @@ P1 (reçus : mutation seule, no-op zéro écriture) ✅ appliqué au plan (à fa
 
 1. **Marge I2 : 2 SLOC** (498/500) — plus aucune ligne kernel sans compensation ; le noyau est complet (T1.7), aucune croissance prévue.
 2. **Classe `GCNEngine` hors liste blanche I1** — garde stricte, arbitrage ADR-0010 avant usage effectif en T4.5.
-3. **Gold-219 introuvable en un fichier** (85 dans `gold_mini`, 219 = somme classes) — bloque T3.9 ; à clarifier côté moteur/dataset.
+3. **Gold-219 résolu** : `tranche_t2/t2_gold.json` (distribution exacte, FR/EN/ES, CIR gold) → fixture slim `benchmarks/gold-219.json` (69 Ko, traçable). Le gold ne fait pas partie du SA (fixture benchmark, comme T9.7).
 4. **`uv sync` initial fragile hors-ligne** (cache vide) — résolu ici, à surveiller en CI.
 5. **Lint I9 non écrit** — seuils provisoires repérés (`PROVISOIRE`, seuils WAL/index) mais sans garde auto avant T4.1.
 6. **Décisions reportées** : mapping `min_extraction_method` (T4.1), fiabilité sources (T6.3), règle d'opposition détaillée (T5.3), accès CYCLES/GAPS (T5.4 : binding vs CLI), `pending` conversation (phase 10).
@@ -118,7 +118,9 @@ P1 (reçus : mutation seule, no-op zéro écriture) ✅ appliqué au plan (à fa
 
 `3c8e00a` J0+T1.1 · `ee95532` T1.2 · `968f03e` T1.3 · `7b676a6` T1.4 · `ad11321` T1.5 · `4e6d90f` T1.6+T1.7 (J1) · `a18bef8` T2.1 · `199c9c9` T2.2+ADR-0011 · `f927ab5` T2.3 · `28cab04` T2.4 · `f1202a5` T2.5 · `6f5ad9f` T2.6 · `905d9d4` T2.7+T2.8 (J2) · `5b99c6d` T3.1 · `44ade14` T3.2 · `520d816` T3.3+T3.4 · `b958ca0` T3.5 · `0198cd2` T3.6 · `96af26e` docs T0→T3.6 · `1b02592` T3.7.
 
-## 13. T3.7–T3.8 (au-delà du journal T0→T3.6)
+## 13. T3.7–T3.9 (au-delà du journal T0→T3.6)
 
 - **T3.7** (`1b02592`) : `adapters/local_files.py` — poll mtime+hash+sha, globs stdlib, curseur JSON opaque (poll tolérant, ack strict), lecture STRICTEMENT seule (aucun sidecar, `.git`/caches exclus, binaire sauté), `etendue()` TokenSpan couvrant / CodeSpan fichier (grossier mais vrai ; fin au mot = T5.4), `RawDoc` réels offline. Manifest : `permissions` vides autorisées (absent refusé). Entry-point déclaré et chargeable.
 - **T3.8** (ce commit) : `directives/code.dogfood.json` (domaine `code`, seuils 0.0/ml_python justifiés B1) ; `engine_bridge/binaire.py` (résolution `GCN_BIN`/PATH/défaut dev) ; `ingestion.py` (F1 partagé : phrases → extract → ancre document → enveloppe → vérifie → ingest, absorbé en T4.4) ; `tests/offline/test_dogfood.py` (corpus fixture, lattice réelle si `gcn` présent sinon stub, I4 vérifié, offline) ; `scripts/dogfood_code.py` (run dépôt réel). **Constat décisif** : CLI `gcn` 4.0.0 présent et fonctionnel → lattice réelle + poids d'essai (structure réelle, poids bruts, B2 intact : aucun checkpoint touché). Mesure dogfood : 53 docs, 7900 phrases/CIRs, 234 entités, 185 confirmations, 6965 idempotentes (poids bruts → triplets génériques répétés, dédup conforme), 0 dropped/invalide, réponses avec `file://` citées. Labels `hidden_cause(?)` : encodeur d'essai, pas une qualité (B1, T3.9 mesure).
+
+- **T3.9** : tranche verticale (`tests/bench/tranche.py` + `scripts/tranche_verticale.py` + subset test + `tests/essai.py` factorisé d_emb=16). Intégrité redéfinie (présence mémoire, pas raisonnement — les flags B1 faussaient la mesure). **5 nombres** (`benchmarks/tranche-verticale-2026-10-12.json`) : précision null (0 verdict positif), rappel 0.0 (plancher : labels annotateur vs surface + flags B1 ; recouvrement token ~40 % en diagnostic), spécificité 1.0, latences 7.3/10.3 ms, 256 docs/s, intégrité 1.0, ES 24 exclues (pas de lattice). Compteur : **195 tests**, noyau 498/500. J3 clos.
