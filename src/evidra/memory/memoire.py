@@ -145,7 +145,7 @@ def appliquer_domaine(etat: dict[str, Any], enr: Any) -> None:
         etat[id_triplet(triplet)] = dict(enr.donnees)
     elif enr.op == "tombstone":
         etat.pop(id_triplet(_triplet(enr.donnees)), None)
-    # op "drop" : aucun effet d'état (compté au reçu).
+    # "receipt", "drop" : audit seul, aucun effet d'état (patch P1).
 
 
 def memoire_depuis_etat(domaine: str, etat: Mapping[str, Any]) -> tuple[Memoire, int]:

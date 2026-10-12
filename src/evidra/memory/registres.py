@@ -38,6 +38,8 @@ class EtatTache(StrEnum):
 
 def _appliquer_dict(etat: dict[str, Any], enr: Enregistrement) -> None:
     """Upsert générique (`tombstone` = retrait) pour les 4 registres."""
+    if enr.op in ("receipt", "drop"):
+        return  # audit seul, aucun effet d'état (patch P1)
     if enr.op == "tombstone":
         etat.pop(enr.cle, None)
     else:
@@ -111,6 +113,10 @@ class Registres:
                 },
             ),
         )
+
+    def taches(self) -> dict[str, Any]:
+        """Toutes les entrées du stream tâches (tâches + curseurs)."""
+        return self._magasin.recharger(FLUX_TACHES).etat
 
     def passer_etat(self, ident: str, etat: EtatTache, motif: str = "") -> int:
         """Transition d'état (motif exigé pour `abandoned`)."""
