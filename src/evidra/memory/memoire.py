@@ -55,11 +55,11 @@ class Issue:
 class Memoire:
     """État vivant d'un domaine : entités, observations vues, index."""
 
-    def __init__(self, domaine: str) -> None:
+    def __init__(self, domaine: str, seuils: tuple[float, float] | None = None) -> None:
         self.domaine = domaine
         self.entites: dict[Triplet, Envelope] = {}
         self.vues: set[str] = set()
-        self.index = Index()
+        self.index = Index(seuils)
         self.par_id: dict[str, Triplet] = {}  # id d'index → triplet (stable sous alias T6.5)
         self.paires: dict[
             tuple[str, str, str], list[Triplet]
@@ -244,7 +244,9 @@ def appliquer_domaine(etat: dict[str, Any], enr: Any) -> None:
     # "receipt", "drop" : audit seul, aucun effet d'état (patch P1).
 
 
-def memoire_depuis_etat(domaine: str, etat: Mapping[str, Any]) -> tuple[Memoire, int]:
+def memoire_depuis_etat(
+    domaine: str, etat: Mapping[str, Any], seuils: tuple[float, float] | None = None
+) -> tuple[Memoire, int]:
     """Rebuild : `(mémoire, ignorés)` — tolérant par capsule (I12)."""
-    memoire = Memoire(domaine)
+    memoire = Memoire(domaine, seuils)
     return memoire, memoire.reconstruire(etat)

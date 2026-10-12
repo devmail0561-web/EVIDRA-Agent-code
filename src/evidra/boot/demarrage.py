@@ -12,6 +12,8 @@ instance). Directive illisible ⇒ refus net. `pending` conversationnel : phase
 from __future__ import annotations
 
 import json
+import logging
+import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -23,15 +25,17 @@ from evidra.boucle import Boucle
 from evidra.directive.loader import charger
 from evidra.directive.reload import Surveillant
 from evidra.directive.schema import Directive
-from evidra.engine_bridge.moteur import version_moteur
 from evidra.engine_bridge.travailleur import lancer
 from evidra.kernel.scheduler import Budgets, Scheduler
 from evidra.memory.memoire import Memoire, memoire_depuis_etat
 from evidra.memory.registres import Registres
 from evidra.memory.store import Magasin, StoreError
 from evidra.tools.ingest import OutilIngest, Seuils
+from evidra.util import version_moteur
 
 NOM_MANIFASTE = "sa_manifest.json"
+
+_LOG = logging.getLogger(__name__)
 
 
 class DemarrageError(Exception):
@@ -92,6 +96,7 @@ def demarrer(
     try:
         directive = charger(directive_path)
     except Exception as exc:
+        _LOG.exception("directive illisible : %s", directive_path)
         raise DemarrageError(f"directive : {exc}") from None
     surveillant = Surveillant(directive_path, directive)
 
@@ -196,6 +201,7 @@ def _phase_moteur(
             lancer(lambda: moteur.analyze_batch(["phrase sentinelle."]), 60.0)
             rechauffe = True
         except Exception as exc:  # noqa: BLE001 — préchauffage best-effort, tracé
+            _LOG.exception("préchauffage moteur manqué")
             motifs.append(f"préchauffage moteur manqué : {exc}")
     return {
         "modeles_consignes": len(modeles),
@@ -211,6 +217,7 @@ def _memoires_domaines(magasin: Magasin, directive: Directive) -> dict[str, Memo
     )
     if directive.domain not in noms:
         noms.append(directive.domain)
+    seuils = (directive.quality.seuils_tiers[0], directive.quality.seuils_tiers[1])
     memoires: dict[str, Memoire] = {}
     for nom in noms:
         cle = f"domains/{nom}"
@@ -219,11 +226,19 @@ def _memoires_domaines(magasin: Magasin, directive: Directive) -> dict[str, Memo
         except StoreError:
             charge = None
         if charge is None:
-            memoires[nom] = Memoire(nom)
+            memoires[nom] = Memoire(nom, seuils)
         else:
-            memoire, _ignores = memoire_depuis_etat(nom, charge.etat)
+            memoire, _ignores = memoire_depuis_etat(nom, charge.etat, seuils)
             memoires[nom] = memoire
     return memoires
+
+
+def _fsync_dossier(dossier: Path) -> None:
+    fd = os.open(dossier, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 def _sceller_manifeste(data_dir: Path, surveillant: Surveillant, magasin: Magasin) -> None:
@@ -238,8 +253,13 @@ def _sceller_manifeste(data_dir: Path, surveillant: Surveillant, magasin: Magasi
             seqs = [e.seq for e in magasin.flux(cle).relire().valides]
             contenu["streams"][cle] = max(seqs) if seqs else 0
         except Exception:  # noqa: BLE001 — manifeste best-effort, jamais bloquant
+            _LOG.exception("manifeste : stream %s illisible, ignoré", cle)
             continue
     chemin = data_dir / NOM_MANIFASTE
     tmp = chemin.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(contenu, indent=2, sort_keys=True), encoding="utf-8")
+    with open(tmp, "w", encoding="utf-8") as flux:
+        flux.write(json.dumps(contenu, indent=2, sort_keys=True))
+        flux.flush()
+        os.fsync(flux.fileno())
     tmp.replace(chemin)
+    _fsync_dossier(data_dir)

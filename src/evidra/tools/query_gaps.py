@@ -10,6 +10,7 @@ lacune (bonne nouvelle). Sans binaire : DEGRADE explicite.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -21,9 +22,12 @@ from evidra.kernel.manifest import Permission
 from evidra.memory.memoire import Memoire
 from evidra.memory.sous_graphe import MAX_ARETES, MAX_NOEUDS, decouper
 from evidra.tools._requetes_rust import iri_pour, preuves_pour
+from evidra.util import garde
 
 Interroger = Callable[..., dict[str, Any]]
 PROFONDEUR_CHAINE = 1
+
+_LOG = logging.getLogger(__name__)
 
 
 class OutilLacunes:
@@ -60,10 +64,7 @@ class OutilLacunes:
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Lacunes sourcées d'une chaîne surveillée ; jamais levée."""
-        try:
-            return self._run(ctx, args)
-        except Exception as exc:  # noqa: BLE001 — l'outil ne lève jamais
-            return ToolResult(status=Status.FAILED, payload={"motif": f"panne query_gaps : {exc}"})
+        return garde(self.name, lambda: self._run(ctx, args), journal=_LOG)
 
     def _run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         chaine = args.get("chaine") if isinstance(args, Mapping) else None

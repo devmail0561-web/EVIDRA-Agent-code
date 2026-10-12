@@ -46,6 +46,14 @@ jobs:
         working-directory: harness-gcn
         run: uv run lint-imports
 
+      - name: Garde I2 (noyau < 500 SLOC)
+        working-directory: harness-gcn
+        run: python3 scripts/sloc.py src/evidra/kernel
+
+      - name: Garde I9 (constantes déclarées)
+        working-directory: harness-gcn
+        run: python3 scripts/lint_provisoire.py src/evidra
+
       - name: Tests + couverture
         working-directory: harness-gcn
         run: uv run pytest -q --cov=evidra --cov-report=term-missing

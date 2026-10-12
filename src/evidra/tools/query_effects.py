@@ -4,12 +4,16 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Mapping
 from typing import Any
 
 from evidra.kernel.contracts import Context, CostHint, Status, ToolResult, Verb
 from evidra.kernel.manifest import Permission
 from evidra.memory.memoire import Memoire
+from evidra.util import garde
+
+_LOG = logging.getLogger(__name__)
 
 
 class OutilEffets:
@@ -38,12 +42,7 @@ class OutilEffets:
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Effets sourcés ; entrée invalide ⇒ `failed`, jamais levée."""
-        try:
-            return self._run(ctx, args)
-        except Exception as exc:  # noqa: BLE001 — l'outil ne lève jamais
-            return ToolResult(
-                status=Status.FAILED, payload={"motif": f"panne query_effects : {exc}"}
-            )
+        return garde(self.name, lambda: self._run(ctx, args), journal=_LOG)
 
     def _run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         concept = args.get("concept") if isinstance(args, Mapping) else None

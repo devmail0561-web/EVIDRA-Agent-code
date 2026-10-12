@@ -225,6 +225,25 @@
           ],
           "default": "symbolic_rust",
           "title": "Min Extraction Method"
+        },
+        "seuils_tiers": {
+          "default": [
+            0.85,
+            0.65
+          ],
+          "description": "[provisoire] tiers confiance index (high, medium), \u00e9tude \u00a77.2",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Seuils Tiers",
+          "type": "array"
         }
       },
       "title": "Qualite",

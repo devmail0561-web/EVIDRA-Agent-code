@@ -9,6 +9,7 @@ aucun cycle (bonne nouvelle, pas un échec). Sans binaire : DEGRADE explicite.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -21,8 +22,11 @@ from evidra.memory.envelope import normaliser_label
 from evidra.memory.memoire import Memoire, id_triplet
 from evidra.memory.sous_graphe import MAX_ARETES, MAX_NOEUDS, PROFONDEUR_DEFAUT, decouper
 from evidra.tools._requetes_rust import iri_pour
+from evidra.util import garde
 
 Interroger = Callable[..., dict[str, Any]]
+
+_LOG = logging.getLogger(__name__)
 
 
 class OutilCycles:
@@ -58,12 +62,7 @@ class OutilCycles:
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Cycles sourcés ; entrée invalide ⇒ `failed`, jamais levée."""
-        try:
-            return self._run(ctx, args)
-        except Exception as exc:  # noqa: BLE001 — l'outil ne lève jamais
-            return ToolResult(
-                status=Status.FAILED, payload={"motif": f"panne query_cycles : {exc}"}
-            )
+        return garde(self.name, lambda: self._run(ctx, args), journal=_LOG)
 
     def _run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         memo = self._memoires.get(ctx.domain)

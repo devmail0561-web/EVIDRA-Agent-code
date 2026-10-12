@@ -70,6 +70,18 @@ def test_status_apres_boot(tmp_path: Path, capsys) -> None:
     assert any(s["stream"] == "domains/code" for s in rapport["streams"])
 
 
+def test_status_manifeste_corrompu_tolerant(tmp_path: Path, capsys) -> None:
+    data = _amorcer(tmp_path)
+    (data / "sa_manifest.json").write_text("{ pourri", encoding="utf-8")
+    (data / "ailleurs" / "wal.jsonl").parent.mkdir(parents=True)
+    (data / "ailleurs" / "wal.jsonl").write_text("", encoding="utf-8")
+    assert main(["status", "--data-dir", str(data)]) == 0
+    rapport = json.loads(capsys.readouterr().out)
+    assert rapport["manifeste"] == {}
+    assert rapport["invalides"] == ["ailleurs"]
+    assert any("manifeste" in a for a in rapport["avertissements"])
+
+
 def test_query_inconnu(tmp_path: Path) -> None:
     assert main(["query", "causes", "x", "--data-dir", str(tmp_path), "--domaine", "code"]) == 1
 

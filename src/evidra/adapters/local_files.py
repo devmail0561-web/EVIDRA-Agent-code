@@ -106,10 +106,18 @@ class AdaptateurFichiers:
         """Scanne et retourne les documents nouveaux/modifiés (triés)."""
         if not self._racine.is_dir():
             raise ValueError(f"racine illisible : {self._racine}")
+        racine = self._racine.resolve()
         vus = self._charger_curseur(since)
         trouves: list[RawDoc] = []
         for motif in self._motifs:
             for chemin in sorted(self._racine.glob(motif)):
+                try:
+                    reel = chemin.resolve()
+                except (OSError, RuntimeError):
+                    continue
+                if not reel.is_relative_to(racine):
+                    log.debug("hors racine sauté", extra={"fichier": str(chemin)})
+                    continue
                 if not chemin.is_file() or _est_exclu(chemin, self._racine):
                     continue
                 meta = _meta(chemin)

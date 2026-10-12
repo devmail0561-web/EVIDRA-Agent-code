@@ -3,7 +3,8 @@
 """Index inversé (T2.5) : O(n)→O(k) sur les requêtes par label.
 
 `label` (exact normalisé, repli tokens), `relation`, tiers de confiance
-(seuils **provisoires** 0.85/0.65 — directive en T4.1, I9). Construction
+(seuils `[provisoire]` depuis la directive `quality.seuils_tiers`, I9 —
+source unique `directive.schema`, jamais de constante ici). Construction
 unique après chargement (`reconstruire`), mise à jour O(1) à l'insertion,
 retrait propre sur tombstone (`retirer`). Normalisation via
 `normaliser_label` (fonction unique, T2.3 — alias T6.5 réutilise).
@@ -13,18 +14,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from evidra.directive.schema import seuils_tiers_defaut
 from evidra.memory.envelope import normaliser_label
 
-# Seuils PROVISOIRES (étude §7.2) : en directive dès T4.1, jamais figés.
-SEUIL_HAUT = 0.85
-SEUIL_MOYEN = 0.65
 
-
-def tier(confiance: float) -> str:
-    """high ≥ 0.85, medium ≥ 0.65, low en dessous (provisoire)."""
-    if confiance >= SEUIL_HAUT:
+def tier(confiance: float, haut: float, moyen: float) -> str:
+    """Tier d'une confiance selon des seuils explicites (jamais de défaut dur)."""
+    if confiance >= haut:
         return "high"
-    if confiance >= SEUIL_MOYEN:
+    if confiance >= moyen:
         return "medium"
     return "low"
 
@@ -41,7 +39,12 @@ class _Arete:
 class Index:
     """Index d'un domaine : arêtes adressables par label, tokens, relation."""
 
-    def __init__(self) -> None:
+    def __init__(self, seuils: tuple[float, float] | None = None) -> None:
+        haut, moyen = seuils if seuils is not None else seuils_tiers_defaut()
+        if not 0.0 <= moyen <= haut <= 1.0:
+            raise ValueError(f"seuils de tiers invalides : {(haut, moyen)}")
+        self._seuil_haut = haut
+        self._seuil_moyen = moyen
         self._aretes: dict[str, _Arete] = {}
         self._depuis: dict[str, set[str]] = {}
         self._vers: dict[str, set[str]] = {}
@@ -58,7 +61,13 @@ class Index:
             self.retirer(ident)
         src_n, dst_n = normaliser_label(src), normaliser_label(dst)
         tokens = frozenset(src_n.split()) | frozenset(dst_n.split())
-        arete = _Arete(src=src_n, dst=dst_n, tokens=tokens, relation=relation, tier=tier(confiance))
+        arete = _Arete(
+            src=src_n,
+            dst=dst_n,
+            tokens=tokens,
+            relation=relation,
+            tier=tier(confiance, self._seuil_haut, self._seuil_moyen),
+        )
         self._aretes[ident] = arete
         self._depuis.setdefault(src_n, set()).add(ident)
         self._vers.setdefault(dst_n, set()).add(ident)

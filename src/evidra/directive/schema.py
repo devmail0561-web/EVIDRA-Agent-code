@@ -102,6 +102,24 @@ class Qualite(_Base):
 
     min_confidence: float = Field(default=0.70, ge=0.0, le=1.0)
     min_extraction_method: str | list[str] = "symbolic_rust"
+    seuils_tiers: tuple[float, float] = Field(
+        default=(0.85, 0.65),
+        description="[provisoire] tiers confiance index (high, medium), étude §7.2",
+    )
+
+    @field_validator("seuils_tiers")
+    @classmethod
+    def _tiers_ordonnes(cls, seuils: tuple[float, float]) -> tuple[float, float]:
+        haut, moyen = seuils
+        if not 0.0 <= moyen <= haut <= 1.0:
+            raise ValueError("seuils_tiers exige 0 ≤ medium ≤ high ≤ 1")
+        return seuils
+
+
+def seuils_tiers_defaut() -> tuple[float, float]:
+    """Défaut canonique des tiers (source unique : `Qualite.seuils_tiers`, I9)."""
+    defaut = Qualite.model_fields["seuils_tiers"].default
+    return (float(defaut[0]), float(defaut[1]))
 
 
 class Surveillance(_Base):

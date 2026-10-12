@@ -9,7 +9,9 @@ build/
 .benchmarks/
 .ruff_cache/
 .mypy_cache/
+.import_linter_cache/
 hypothesis/
+.hypothesis/
 data/
 *.npz
 *.npy

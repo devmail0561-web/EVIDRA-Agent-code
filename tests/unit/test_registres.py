@@ -72,6 +72,17 @@ def test_expiration_abandon_motive_non_supprime(tmp_path: Path) -> None:
             registres.passer_etat("fantome", EtatTache.COURS)
 
 
+def test_expiration_horloge_illisible_ne_leve_jamais(tmp_path: Path) -> None:
+    with Magasin(tmp_path) as magasin:
+        registres = Registres(magasin)
+        registres.creer_tache("naive", "ingest", 10.0, "2020-01-01T00:00:00")
+        registres.creer_tache("pourrie", "ingest", 10.0, "pas-une-date")
+        assert registres.relever_expiration("pas-une-horloge") == []
+        assert registres.relever_expiration("2026-10-11T00:00:00+00:00") == []
+        assert registres.tache("naive")["etat"] == EtatTache.ATTENTE.value
+        assert registres.tache("pourrie")["etat"] == EtatTache.ATTENTE.value
+
+
 def test_curseurs_persistes(tmp_path: Path) -> None:
     with Magasin(tmp_path) as magasin:
         registres = Registres(magasin)

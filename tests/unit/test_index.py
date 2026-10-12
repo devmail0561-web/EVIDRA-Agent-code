@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -81,3 +82,17 @@ def test_tiers_provisoires() -> None:
     assert set(index.par_tier("low")) == {"l"}
     assert set(index.par_relation("causes")) == {"h", "m", "l"}
     assert index.stats()["aretes"] == 3
+
+
+def test_tiers_depuis_directive() -> None:
+    index = Index((0.95, 0.50))
+    index.ajouter("h", "a", "b", "causes", 0.90)
+    assert set(index.par_tier("high")) == set()
+    assert set(index.par_tier("medium")) == {"h"}
+
+
+def test_tiers_invalides_refuses() -> None:
+    with pytest.raises(ValueError):
+        Index((0.50, 0.95))
+    with pytest.raises(ValueError):
+        Index((1.50, 0.10))

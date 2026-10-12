@@ -15,10 +15,13 @@ moteur est injecté (T4.5), jamais importé.
 from __future__ import annotations
 
 import copy
+import logging
 
 from evidra.engine_bridge.moteur import Moteur
 from evidra.engine_bridge.travailleur import WorkerTimeout, lancer
 from evidra.kernel.contracts import Status, ToolResult
+
+_LOG = logging.getLogger(__name__)
 
 
 def extraire(documents: list[str], *, moteur: Moteur | None, timeout_s: float = 30.0) -> ToolResult:
@@ -38,6 +41,7 @@ def extraire(documents: list[str], *, moteur: Moteur | None, timeout_s: float = 
     except WorkerTimeout:
         return _echec(f"extraction en timeout ({timeout_s}s)")
     except Exception as exc:  # noqa: BLE001 — toute panne moteur devient `failed`
+        _LOG.exception("panne moteur extract")
         return _echec(f"panne moteur : {exc}")
     if not isinstance(cirs, list):
         return _echec("moteur : analyze_batch n'a pas renvoyé une liste")

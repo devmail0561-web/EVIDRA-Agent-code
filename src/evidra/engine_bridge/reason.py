@@ -13,15 +13,23 @@ l'appelant, propriétaire des enveloppes (T5.2).
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any
-
-from gcn_python.reasoning.engine import reason as raison_moteur
 
 from evidra.engine_bridge.travailleur import WorkerTimeout, lancer
 from evidra.kernel.contracts import Status, ToolResult
 
 Raisonneur = Callable[..., dict[str, Any]]
+
+_LOG = logging.getLogger(__name__)
+
+
+def _raison_moteur_defaut() -> Raisonneur:
+    """Import paresseux : `import evidra.engine_bridge.reason` sans moteur OK."""
+    from gcn_python.reasoning.engine import reason as raison
+
+    return raison
 
 
 def _preuves(graphe: Any, chemin: list[Any], etiquettes: Mapping[Any, str]) -> list[dict[str, Any]]:
@@ -73,7 +81,7 @@ def raisonner_chaine(
     etiquettes: Mapping[Any, str],
     budget: int = 16,
     timeout_s: float = 30.0,
-    raison: Raisonneur = raison_moteur,
+    raison: Raisonneur | None = None,
 ) -> ToolResult:
     """Chaîne causale entre deux labels ; panne ⇒ `failed`, jamais levée."""
     if (
@@ -90,6 +98,14 @@ def raisonner_chaine(
         return ToolResult(
             status=Status.FAILED, payload={"trouve": False, "motif": "budget invalide"}
         )
+    if raison is None:
+        try:
+            raison = _raison_moteur_defaut()
+        except Exception as exc:
+            return ToolResult(
+                status=Status.FAILED,
+                payload={"trouve": False, "motif": f"moteur non importable : {exc}"},
+            )
     try:
         reponse = lancer(lambda: raison(de_label, vers_label, graphe, budget=budget), timeout_s)
     except WorkerTimeout:
@@ -98,6 +114,7 @@ def raisonner_chaine(
             payload={"trouve": False, "motif": f"reason en timeout ({timeout_s}s)"},
         )
     except Exception as exc:  # noqa: BLE001 — toute panne moteur devient `failed`
+        _LOG.exception("panne moteur reason")
         return ToolResult(
             status=Status.FAILED, payload={"trouve": False, "motif": f"panne moteur : {exc}"}
         )

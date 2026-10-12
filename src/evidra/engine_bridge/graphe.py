@@ -15,8 +15,6 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
-from gcn_python.verbalizer.instructions import CausalGraph
-
 from evidra.engine_bridge.provenance import serialiser_span
 from evidra.memory.envelope import Envelope, normaliser_label
 
@@ -57,7 +55,7 @@ def cir_pour_moteur(enveloppe: Envelope) -> dict[str, Any]:
     }
 
 
-def ajouter(graphe: CausalGraph, enveloppe: Envelope) -> None:
+def ajouter(graphe: Any, enveloppe: Envelope) -> None:
     """Ajoute une enveloppe au graphe (incrémental, T3.6).
 
     Lève `ValueError` (moteur) sur relation inconnue ou extrémité pendante —
@@ -66,15 +64,17 @@ def ajouter(graphe: CausalGraph, enveloppe: Envelope) -> None:
     graphe.add_cir(cir_pour_moteur(enveloppe), ORIGINE_DOCUMENT)
 
 
-def materialiser(enveloppes: Iterable[Envelope]) -> CausalGraph:
+def materialiser(enveloppes: Iterable[Envelope]) -> Any:
     """Reconstruit un graphe frais (rafraîchissement, jamais de cache lu)."""
+    from gcn_python.verbalizer.instructions import CausalGraph
+
     graphe = CausalGraph()
     for enveloppe in enveloppes:
         ajouter(graphe, enveloppe)
     return graphe
 
 
-def empreinte(graphe: CausalGraph) -> list[tuple[str, str, str, float]]:
+def empreinte(graphe: Any) -> list[tuple[str, str, str, float]]:
     """Vue structurelle triée (comparaison incrémental ≡ rebuild, tests).
 
     Lit `.edges` (structure publique consommée par `reason`/`verify_path`),

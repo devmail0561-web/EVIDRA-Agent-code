@@ -137,3 +137,41 @@ P1 (reçus : mutation seule, no-op zéro écriture) ✅ appliqué au plan (à fa
 - **T4.7** : tick boucle < 10 ms mesuré ; SIGTERM → reçu final + fsync + verrou libéré (subprocess, re-ouverture prouvée).
 - Leçons : `set(str)` éclate (bug seuils) ; `poids` B1 faussent les nodiges (séparer intégrité/fidélité) ; d_emb=16 pas 4 ; permissions vides OK (absent refusé).
 - Compteur : **236 tests**, noyau 498/500. J4 : boucle offline, crash sain, directive tiède.
+
+## 15. Correctifs post-J4 (2026-10-12, audit sans complaisance)
+
+Audit externe (suivi d'une vérification de fiabilité : l'audit initial annonçait ~20 `except`, 10 `print`, 186–236 tests — valeurs corrigées ci-dessous). Correctifs appliqués, tous vérifiés par la gate complète (`ruff check`, `ruff format --check`, `mypy`, `lint-imports`, `lint_provisoire.py`, `sloc.py`, `pytest` complet + `--disable-socket` offline) :
+
+- **Noyau : setter `Budgets`.** `Scheduler.configurer_budgets()` ajouté ; `Boucle._tiede()` n'assigne plus `_budgets` en privé. Économie : alias dupliqué `_File`/`_Entree` fusionné. **499/500 SLOC**, mypy strict vert, `test_kernel_budget` + `test_architecture` verts.
+- **`traiter_document` typé.** `adaptateur: SourceLocale` (Protocol `Adapter` + `etendue`/`canal`), `moteur: Moteur | None`, `outil: Tool`, `ctx: Context`. Correction d'audit : la porte `can()` n'était PAS court-circuitée (`OutilIngest.run` refuse via `can()`) — seul le typage `Any` était fautif.
+- **CLI unifié sur `Magasin`.** `store.lire_domaine()` (snapshot + rejeu WAL + `memoire_depuis_etat`, sans verrou — utilisable agent tournant) + `store.inventorier_racine()` partagé par `Magasin.inventorier()`, `cmd_query` et `cmd_status`. `test_cli` + `test_store` verts (23 tests).
+- **Imports `gcn` paresseux.** `reason.py`, `validate.py` (défauts `None` + import local, `FAILED "moteur non importable"` explicite), `graphe.py` (`CausalGraph` local à `materialiser`, annotations `Any`). Vérifié : `import evidra.engine_bridge.reason` réussit moteur absent.
+- **Déduplication.** `util.borner()` (nouveau `evidra/util.py`, `boucle.borner` = alias re-exporté) → `tools/report` n'importe plus `boucle` ; `aretes_pour()` partagé (`_requetes_rust.py`) → `_aretes_requete` de `query_chain` supprimé ; `run()->_run()` des 8 outils → `util.garde()` (`counterfactual` garde son `avertissement` + log).
+- **Stacks loggées.** `_LOG.exception` ajouté aux 8 outils (via `garde`), `counterfactual`, `boucle`, `ingestion`, `cli`, `demarrage` (directive, préchauffage, manifeste), `engine_bridge` (`extract/reason/validate`). Décision assumée : `kernel/scheduler.py` SANS logger (budget I2 — le reçu `FAILED` reste tracé via `log_recu`/WAL).
+- **Garde I9 exécutable.** `scripts/lint_provisoire.py` (registre de 9 constantes : `version`/`constatee`/`spec`/`provisoire`) + `tests/unit/test_provisoire.py` + job CI. **9 constantes déclarées, 0 écart.**
+- **I1 réparé (pré-existant).** `lint-imports` était `BROKEN` avant ces correctifs (`boot.demarrage → engine_bridge.moteur → gcn_python` transitif). `version_moteur()` déplacé dans `evidra/util.py` (métadonnées de distribution, aucun import `gcn`), re-exporté par `engine_bridge.moteur`. Contrat **KEPT**.
+- **Hygiène.** `.gitignore` : ajout `.import_linter_cache/`, `.hypothesis/`.
+
+Compteurs vérifiés : **291 tests** (`uv run pytest --collect-only` ; `pytest` système seul = 50 erreurs de collection, `uv run` exigé), noyau **499/500**, `lint-imports` KEPT. Non traité (reporté, inchangé) : `tools/ → memory/` direct (9/9 outils — invalide `PLAN_SA §5`, à trancher : appliquer `ctx.store` ou amender le plan), P1–P3 mortes, `output/`/`etat.py` non branchés, nommage FR/EN, pin moteur sur branche non mergée.
+
+## 16. Réfutation de l'audit n°2 + correctifs (2026-10-12)
+
+Second audit (invariants + adverse) réfuté point par point, preuves au code ; les concessions + durcissements légitimes sont corrigés ci-dessous. Gate complète verte : `ruff`, `mypy`, `sloc` **499/500**, `lint_provisoire` **7 constantes, 0 écart**, `lint-imports` KEPT, **317 tests** (+26), offline vert.
+
+Réfutations retenues (l'audit n°2 surévaluait) :
+- `Future` skippé : aucun `.result()` en attente dans `src/` (`boucle.py:187` jette le retour) — pas d'« attente infinie ». Corrigé quand même : les `Future` skippés sont désormais résolus en `DEGRADE "budget dépassé"` (`scheduler.py`, +4/−4 lignes, I2 tenu) + test `test_evenement_skipe_par_budget_resout_degrade`.
+- Course lecture/`compact` : jamais de corruption (rename atomique, `relire(depuis)` idempotent) — pire cas = lecture périmée sur chemin opérateur documenté « sans verrou ». `status` signale désormais les streams ignorés.
+- FIFO : inatteignable (`is_file()` = réguliers seuls). Symlinks hors racine : trou réel, corrigé (`resolve()` + `is_relative_to`, boucle → `continue`, test `test_lien_hors_racine_ignore`).
+- File non bornée : producteur unique (boucle, borné par les tâches), API vide — théorique, reporté à l'API.
+- I3 « prétendu » : faux — `appliquer_domaine` ignore `receipt`/`drop` (aucun effet d'état), l'état du graphe n'a bien qu'un écrivain (`ingest`). Ajouté le mécanisme manquant : `tests/unit/test_ecrivains.py` (ensemble des 5 fichiers écrivains figé).
+- I1 : `essai.py` hors liste blanche = scaffold dev opt-in documenté, pas chemin prod. Ajouté le mécanisme : `test_liste_blanche_dans_engine_bridge` (bridge hors `essai` = liste blanche stricte, jeu d'imports d'`essai.py` figé).
+- `aretes_pour` trié : sans effet comportemental (`_assembler` joint par labels, ordre-indépendant) — test de déterminisme ajouté (ordre par id, pas par labels : correction d'un test d'abord écrit faux).
+
+Correctifs appliqués :
+- `relever_expiration` tolérant (`TypeError` + naive/aware + horloge illisible ⇒ `[]`, test dédié).
+- `args_valides` supprimé (mort-né) ; `garde(..., journal=)` : les 8 outils loggent sous `evidra.tools.<nom>` (tests `caplog`).
+- `SEUIL_HAUT/MOYEN` sortis du code : `quality.seuils_tiers` (`[provisoire]`, validé `0 ≤ m ≤ h ≤ 1`) devient source unique via `seuils_tiers_defaut()` ; `Index`/`Memoire`/`memoire_depuis_etat`/`lire_domaine` acceptent `seuils` (`None` ⇒ défaut schéma) ; `demarrage` câble la directive ; schéma JSON re-exporté ; registre I9 : 9 → 7 constantes.
+- `cmd_status` tolérant (manifeste corrompu ⇒ `{}` + avertissement, exit 0 ; clé `invalides`) ; `_sceller_manifeste` fsync (fichier + dossier) ; `__all__` de `boucle.py` en fin de fichier ; maille I9 documentée + cas nominaux (orphelin/dérive/non-déclarée).
+- Tests directs ajoutés (`test_correctifs.py`, 14 tests) : `garde` (passe-plat/panne/stack/logger), `version_moteur` (re-export/`unknown`), `aretes_pour`, `lire_domaine` (équivalence + inconnu), `raison=None` sans moteur, injection partielle `validate`, `SourceLocale`, `configurer_budgets`, identité `borner`.
+
+Toujours reporté (inchangé, assumé) : `tools/ → memory/` direct, P1–P3 mortes, `output/`/`etat.py` non branchés, nommage FR/EN, pin moteur, file bornée (à l'API), corpus adversarial I11 (gate T9).

@@ -16,10 +16,13 @@ from evidra.engine_bridge.rust import serialiser_iri
 from evidra.memory.envelope import normaliser_label
 from evidra.memory.memoire import Memoire, id_triplet
 
+AreteIR = tuple[str, str, str, float, bool, dict[str, Any]]
+"""Arête sérialisable : (src, dst, relation, confiance, negated, provenance)."""
 
-def iri_pour(memo: Memoire, ids: tuple[str, ...] | list[str]) -> dict[str, Any]:
-    """Enveloppes désignées → IR dict (ordre déterministe)."""
-    aretes = []
+
+def aretes_pour(memo: Memoire, ids: tuple[str, ...] | list[str]) -> list[AreteIR]:
+    """Enveloppes désignées → arêtes IR (ordre déterministe, jamais persisté)."""
+    aretes: list[AreteIR] = []
     for ident in sorted(ids):
         triplet = memo.par_id.get(ident)
         if triplet is None:
@@ -44,7 +47,12 @@ def iri_pour(memo: Memoire, ids: tuple[str, ...] | list[str]) -> dict[str, Any]:
                 },
             )
         )
-    return serialiser_iri(aretes)
+    return aretes
+
+
+def iri_pour(memo: Memoire, ids: tuple[str, ...] | list[str]) -> dict[str, Any]:
+    """Enveloppes désignées → IR dict (ordre déterministe)."""
+    return serialiser_iri(aretes_pour(memo, ids))
 
 
 def preuves_pour(memo: Memoire, liens: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:

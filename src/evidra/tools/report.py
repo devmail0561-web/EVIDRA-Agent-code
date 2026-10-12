@@ -11,16 +11,19 @@ aucun horodatage produit ici). Planifiable via `report_schedule` (tâche P5/P6).
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Mapping
 from typing import Any
 
-from evidra.boucle import borner
 from evidra.kernel.contracts import Context, CostHint, Status, ToolResult, Verb
 from evidra.kernel.manifest import Permission
 from evidra.memory.envelope import Statut
 from evidra.memory.memoire import Memoire
+from evidra.util import borner, garde
 
 LIMITE_SECTION = 100
+
+_LOG = logging.getLogger(__name__)
 
 
 class OutilRapport:
@@ -52,10 +55,7 @@ class OutilRapport:
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Rapport reproductible ; entrée invalide ⇒ `failed`, jamais levée."""
-        try:
-            return self._run(ctx, args)
-        except Exception as exc:  # noqa: BLE001 — l'outil ne lève jamais
-            return ToolResult(status=Status.FAILED, payload={"motif": f"panne report : {exc}"})
+        return garde(self.name, lambda: self._run(ctx, args), journal=_LOG)
 
     def _run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         scope = args.get("scope", ctx.domain) if isinstance(args, Mapping) else ctx.domain

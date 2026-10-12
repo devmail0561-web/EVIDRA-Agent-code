@@ -95,6 +95,20 @@ def test_etendue_token_code() -> None:
     )
 
 
+def test_lien_hors_racine_ignore(tmp_path: Path) -> None:
+    racine = _racine(tmp_path)
+    dehors = tmp_path / "secret.md"
+    dehors.write_text("secret\n", encoding="utf-8")
+    lien = racine / "docs" / "echappe.md"
+    try:
+        lien.symlink_to(dehors)
+    except OSError:
+        pytest.skip("symlinks indisponibles")
+    uris = [d.uri for d in AdaptateurFichiers(racine).poll(None)]
+    assert str(dehors) not in "".join(uris)
+    assert not any("echappe" in u for u in uris)
+
+
 def test_racine_illisible() -> None:
     with pytest.raises(ValueError):
         AdaptateurFichiers("/inexistant-xyz").poll(None)

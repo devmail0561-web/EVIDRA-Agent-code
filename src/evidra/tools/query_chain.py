@@ -12,6 +12,7 @@ construits côté SA (T6.6, interdit par défaut — ici : pas de synthèse, les
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -22,8 +23,12 @@ from evidra.kernel.manifest import Permission
 from evidra.memory.envelope import normaliser_label
 from evidra.memory.memoire import Memoire, id_triplet
 from evidra.memory.sous_graphe import MAX_ARETES, MAX_NOEUDS, PROFONDEUR_DEFAUT, decouper
+from evidra.tools._requetes_rust import aretes_pour
+from evidra.util import garde
 
 Interroger = Callable[..., dict[str, Any]]
+
+_LOG = logging.getLogger(__name__)
 
 
 class OutilChaine:
@@ -65,10 +70,7 @@ class OutilChaine:
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Chaîne Dijkstra sourcée ; entrée invalide ⇒ `failed`, jamais levée."""
-        try:
-            return self._run(ctx, args)
-        except Exception as exc:  # noqa: BLE001 — l'outil ne lève jamais
-            return ToolResult(status=Status.FAILED, payload={"motif": f"panne query_chain : {exc}"})
+        return garde(self.name, lambda: self._run(ctx, args), journal=_LOG)
 
     def _run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         de = args.get("de") if isinstance(args, Mapping) else None
@@ -128,7 +130,7 @@ class OutilChaine:
                     "derives": [],
                 },
             )
-        iri = serialiser_iri(self._aretes_requete(memo, decoupe.ids))
+        iri = serialiser_iri(aretes_pour(memo, decoupe.ids))
         try:
             reponse = self._interroger(binaire, iri, de, vers, timeout_s=self._timeout_s)
         except (RustIndisponible, ValueError) as exc:
@@ -143,36 +145,6 @@ class OutilChaine:
                 },
             )
         return self._assembler(memo, decoupe.tronque, reponse)
-
-    def _aretes_requete(
-        self, memo: Memoire, ids: tuple[str, ...]
-    ) -> list[tuple[str, str, str, float, bool, dict[str, Any]]]:
-        aretes = []
-        for ident in ids:
-            triplet = memo.par_id.get(ident)
-            if triplet is None:
-                continue
-            enveloppe = memo.entites.get(triplet)
-            if enveloppe is None:
-                continue
-            cir, prov = enveloppe.cir, enveloppe.cir.provenance
-            aretes.append(
-                (
-                    cir.source,
-                    cir.target,
-                    cir.relation,
-                    cir.confidence,
-                    cir.negated,
-                    {
-                        "ref": prov.ref,
-                        "span": prov.span,
-                        "extraction_method": prov.extraction_method,
-                        "model_version": prov.model_version,
-                        "extracted_at": prov.extracted_at,
-                    },
-                )
-            )
-        return aretes
 
     def _assembler(self, memo: Memoire, tronque: int, reponse: Mapping[str, Any]) -> ToolResult:
         if not reponse.get("found"):

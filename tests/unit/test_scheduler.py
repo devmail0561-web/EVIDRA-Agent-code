@@ -94,6 +94,16 @@ def test_evenement_future_resolue():
     assert futur.done() and futur.result().payload == {"marque": "push"}
 
 
+def test_evenement_skipe_par_budget_resout_degrade():
+    ordonnanceur = Scheduler(Budgets(max_tool_calls=0))
+    futur = ordonnanceur.deposer(Priorite.P2, lambda: _recu("jamais", []))
+    rapport = ordonnanceur.tour()
+    assert rapport.recus == ()
+    assert "budget:max_tool_calls" in rapport.budgets_depasse
+    assert futur.done()
+    assert futur.result().status is Status.DEGRADE
+
+
 def test_effet_qui_leve_devient_failed():
     def boom() -> ToolResult:
         raise RuntimeError("panne")

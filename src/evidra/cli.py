@@ -12,10 +12,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import signal
 import sys
 import threading
 from pathlib import Path
+
+_LOG = logging.getLogger(__name__)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -62,6 +65,7 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         return 0
     except Exception as exc:  # noqa: BLE001 — erreur explicite sur stderr, exit 1
+        _LOG.exception("échec commande %s", getattr(args, "commande", "?"))
         print(json.dumps({"erreur": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 1
 
@@ -177,20 +181,13 @@ def cmd_ingest(args: argparse.Namespace) -> int:
 
 def cmd_query(args: argparse.Namespace) -> int:
     """Requête causes/effects avec provenance (sans moteur, sans verrou)."""
-    from evidra.memory.memoire import appliquer_domaine, memoire_depuis_etat
-    from evidra.memory.snapshot import charger
-    from evidra.memory.wal import WAL
+    from evidra.memory.store import StoreError, lire_domaine
 
-    dossier = Path(args.data_dir) / "domains" / args.domaine
-    if not dossier.is_dir():
-        print(
-            json.dumps({"erreur": f"domaine inconnu : {args.domaine}"}, ensure_ascii=False),
-            file=sys.stderr,
-        )
+    try:
+        memo, ignores = lire_domaine(Path(args.data_dir), args.domaine)
+    except StoreError as exc:
+        print(json.dumps({"erreur": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 1
-    with WAL(dossier / "wal.jsonl", verrouiller=False) as journal:
-        charge = charger(dossier, journal, appliquer=appliquer_domaine)
-    memo, ignores = memoire_depuis_etat(args.domaine, charge.etat)
     sorties = []
     for triplet, env in sorted(memo.entites.items()):
         ids = (
@@ -252,25 +249,46 @@ def cmd_compact(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    """État du data_dir : manifeste + rapports par stream, sans verrou (T4.6)."""
+    """État du data_dir : manifeste + rapports par stream, sans verrou (T4.6).
+
+    Tolérant (I12) : manifeste corrompu ⇒ `{}` + avertissement, jamais exit 1 ;
+    streams hors clés ⇒ comptés dans `invalides`, jamais crash.
+    """
     from evidra.memory.memoire import appliquer_domaine
     from evidra.memory.snapshot import charger
+    from evidra.memory.store import inventorier_racine, reperer_invalides
     from evidra.memory.wal import WAL
 
     racine = Path(args.data_dir)
-    manifeste = {}
+    manifeste: dict = {}
+    avertissements = []
     chemin_manifeste = racine / "sa_manifest.json"
     if chemin_manifeste.exists():
-        manifeste = json.loads(chemin_manifeste.read_text(encoding="utf-8"))
-    streams = []
-    for wal in sorted(racine.rglob("wal.jsonl")):
-        dossier = wal.parent
         try:
-            cle = str(dossier.relative_to(racine)).replace("\\", "/")
+            brut = json.loads(chemin_manifeste.read_text(encoding="utf-8"))
+            manifeste = brut if isinstance(brut, dict) else {}
+            if not isinstance(brut, dict):
+                avertissements.append("manifeste non-objet, ignoré")
         except ValueError:
-            continue
-        with WAL(wal, verrouiller=False) as journal:
+            avertissements.append("manifeste illisible, ignoré")
+    streams = []
+    for cle in inventorier_racine(racine):
+        dossier = racine.joinpath(*cle.split("/"))
+        with WAL(dossier / "wal.jsonl", verrouiller=False) as journal:
             charge = charger(dossier, journal, appliquer=appliquer_domaine, stream=cle)
         streams.append(charge.rapport.en_dict() if charge.rapport is not None else {"stream": cle})
-    print(json.dumps({"manifeste": manifeste, "streams": streams}, ensure_ascii=False))
+    invalides = reperer_invalides(racine)
+    if invalides:
+        avertissements.append(f"{len(invalides)} stream(s) hors clés : {sorted(invalides)}")
+    print(
+        json.dumps(
+            {
+                "manifeste": manifeste,
+                "streams": streams,
+                "invalides": sorted(invalides),
+                "avertissements": avertissements,
+            },
+            ensure_ascii=False,
+        )
+    )
     return 0

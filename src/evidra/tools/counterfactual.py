@@ -10,6 +10,7 @@ Lecture seule, comme toutes les coquilles `reason`.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -23,6 +24,8 @@ from evidra.memory.sous_graphe import MAX_ARETES, MAX_NOEUDS, PROFONDEUR_DEFAUT,
 from evidra.tools._requetes_rust import iri_pour, preuves_pour
 
 Interroger = Callable[..., dict[str, Any]]
+
+_LOG = logging.getLogger(__name__)
 
 AVERTISSEMENT = (
     "calcul sur assertions sourcées (avec preuves), sans contrôle de confondeurs "
@@ -67,6 +70,7 @@ class OutilContrefactuel:
         try:
             return self._run(ctx, args)
         except Exception as exc:  # noqa: BLE001 — l'outil ne lève jamais
+            _LOG.exception("panne outil counterfactual")
             return ToolResult(
                 status=Status.FAILED,
                 payload={"motif": f"panne counterfactual : {exc}", "avertissement": AVERTISSEMENT},

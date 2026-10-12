@@ -14,6 +14,7 @@ mutation n'écrivent pas ; « qu'a fait le SA ? » = lecture WAL).
 
 from __future__ import annotations
 
+import logging
 import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -25,8 +26,11 @@ from evidra.kernel.scheduler import Budgets, Priorite, Recu, Scheduler
 from evidra.memory.registres import EtatTache, Registres
 from evidra.memory.store import Magasin
 from evidra.policy import TABLE, Situation, selectionner
+from evidra.util import borner as borner
 
 Effet = Callable[[], ToolResult]
+
+_LOG = logging.getLogger(__name__)
 
 
 def outils_niveau(niveau: Priorite) -> tuple[str, ...]:
@@ -35,14 +39,6 @@ def outils_niveau(niveau: Priorite) -> tuple[str, ...]:
         if n is niveau:
             return outils
     return ()
-
-
-def borner(items: list, maximum: int, *, score: Callable[[object], float]) -> tuple[list, int]:
-    """Dégrade par score : retient les `maximum` meilleurs, `tronqué` compté."""
-    if maximum < 0:
-        raise ValueError(f"maximum négatif : {maximum}")
-    ranges = sorted(items, key=score, reverse=True)
-    return ranges[:maximum], max(0, len(ranges) - maximum)
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,13 +140,14 @@ class Boucle:
             return False
         directive, changee = gardien.rafraichir()
         b = directive.budgets
-        # Noyau gelé (I2, 498/500) : pas de setter, assignation documentée.
-        self._ordonnanceur._budgets = Budgets(
-            max_tool_calls=b.max_tool_calls,
-            max_ingest_per_cycle=b.max_ingest_per_cycle,
-            max_cycle_ms=b.max_cycle_ms,
-            max_wal_bytes=b.max_wal_bytes,
-            reserve_fond=b.reserve_fond,
+        self._ordonnanceur.configurer_budgets(
+            Budgets(
+                max_tool_calls=b.max_tool_calls,
+                max_ingest_per_cycle=b.max_ingest_per_cycle,
+                max_cycle_ms=b.max_cycle_ms,
+                max_wal_bytes=b.max_wal_bytes,
+                reserve_fond=b.reserve_fond,
+            )
         )
         self._politique = directive.permissions.en_politique()
         if changee:
@@ -219,6 +216,7 @@ class Boucle:
             try:
                 recu = self._outils[type_tache]()
             except Exception as exc:  # noqa: BLE001 — outil fautif ⇒ tâche abandonnée, boucle sauve
+                _LOG.exception("panne outil tâche %s", ident)
                 self._registres.passer_etat(
                     ident, EtatTache.ABANDONNEE, motif=f"panne outil : {exc}"
                 )
@@ -242,3 +240,6 @@ class Boucle:
                 payload={"niveau": niveau.value, "motif": "aucun outil planifié"},
             )
         return self._outils[nom]()
+
+
+__all__ = ["borner", "Boucle", "RapportBoucle", "outils_niveau"]

@@ -61,7 +61,6 @@ class RapportTick:
 # (condition, effet, verbe, poids WAL) — tuple interne, jamais exposé.
 _Prog = tuple[Callable[[], bool], Callable[[], ToolResult], Verb, int]
 # (niveau, effet, verbe, poids WAL, futur) — file d'événements thread-safe.
-_File = tuple[Priorite, Callable[[], ToolResult], Verb, int, "Future[ToolResult] | None"]
 _Entree = tuple[Priorite, Callable[[], ToolResult], Verb, int, "Future[ToolResult] | None"]
 
 
@@ -71,8 +70,11 @@ class Scheduler:
     def __init__(self, budgets: Budgets | None = None) -> None:
         self._budgets = budgets if budgets is not None else Budgets()
         self._actions: dict[Priorite, list[_Prog]] = {n: [] for n in Priorite}
-        self._file: queue.Queue[_File] = queue.Queue()
+        self._file: queue.Queue[_Entree] = queue.Queue()
         self.tick = 0
+
+    def configurer_budgets(self, budgets: Budgets) -> None:
+        self._budgets = budgets
 
     def enregistrer(
         self,
@@ -112,8 +114,8 @@ class Scheduler:
         while not arret.is_set():
             self.tour(delai)
 
-    def _drenner(self, delai: float) -> dict[Priorite, list[_File]]:
-        uniques: dict[Priorite, list[_File]] = {n: [] for n in Priorite}
+    def _drenner(self, delai: float) -> dict[Priorite, list[_Entree]]:
+        uniques: dict[Priorite, list[_Entree]] = {n: [] for n in Priorite}
         while True:
             try:
                 attente = self._file.get(timeout=delai)
@@ -122,7 +124,7 @@ class Scheduler:
             uniques[attente[0]].append(attente)
             delai = 0.0
 
-    def _planifier(self, uniques: dict[Priorite, list[_File]]) -> list[_Entree]:
+    def _planifier(self, uniques: dict[Priorite, list[_Entree]]) -> list[_Entree]:
         plan: list[_Entree] = []
         for niveau in Priorite:
             file = uniques[niveau]
@@ -142,9 +144,8 @@ class Scheduler:
         b = self._budgets
         recus: list[Recu] = []
         dep: list[str] = []
-        quota = max(
-            0, b.max_tool_calls - min(b.reserve_fond, sum(1 for p in plan if p[0] not in _HAUTS))
-        )
+        fond = sum(1 for p in plan if p[0] not in _HAUTS)
+        quota = max(0, b.max_tool_calls - min(b.reserve_fond, fond))
         appels = ingeres = octets = 0
         for niveau, effet, verbe, poids, futur in plan:
             if appels >= b.max_tool_calls or (niveau in _HAUTS and appels >= quota):
@@ -153,11 +154,8 @@ class Scheduler:
             if b.max_cycle_ms is not None and (time.monotonic() - debut) * 1000.0 > b.max_cycle_ms:
                 dep.append("budget:max_cycle_ms")
                 break
-            if (
-                verbe is Verb.INGEST
-                and b.max_ingest_per_cycle is not None
-                and ingeres >= b.max_ingest_per_cycle
-            ):
+            limite = b.max_ingest_per_cycle
+            if verbe is Verb.INGEST and limite is not None and ingeres >= limite:
                 dep.append("budget:max_ingest_per_cycle")
                 continue
             if b.max_wal_bytes is not None and octets + poids > b.max_wal_bytes:
@@ -173,4 +171,8 @@ class Scheduler:
             recus.append(Recu(niveau, resultat))
             if futur is not None and not futur.done():
                 futur.set_result(resultat)
+        saute = ToolResult(status=Status.DEGRADE, payload={"motif": "budget dépassé"})
+        for entree in plan:
+            if entree[4] is not None and not entree[4].done():
+                entree[4].set_result(saute)
         return recus, dep

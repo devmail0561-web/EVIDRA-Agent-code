@@ -22,7 +22,7 @@ from typing import Any
 from filelock import FileLock, Timeout
 
 from evidra.kernel.contracts import Record
-from evidra.memory.memoire import appliquer_domaine
+from evidra.memory.memoire import Memoire, appliquer_domaine, memoire_depuis_etat
 from evidra.memory.snapshot import (
     Chargement,
     charger,
@@ -34,6 +34,62 @@ from evidra.memory.wal import WAL, Enregistrement, WALError
 RACINES = ("domains", "registry")
 
 Appliquer = Callable[[dict[str, Any], Enregistrement], None]
+
+
+def parties_cle(cle: str) -> tuple[str, ...]:
+    """Valide une clé de stream, retourne ses parties (fail-closed)."""
+    parties = tuple(cle.split("/"))
+    if len(parties) < 2 or len(parties) > 3 or parties[0] not in RACINES:
+        raise StoreError(
+            f"clé de stream invalide : {cle!r} (domains/<d>[/<sous>] ou registry/<nom>)"
+        )
+    return parties
+
+
+def inventorier_racine(racine: Path) -> list[str]:
+    """Clés des streams valides sur disque, sans verrou (CLI + Magasin)."""
+    cles = []
+    for chemin in sorted(racine.rglob("wal.jsonl")):
+        try:
+            cle = str(chemin.parent.relative_to(racine)).replace("\\", "/")
+            parties_cle(cle)
+        except (StoreError, ValueError):
+            continue
+        cles.append(cle)
+    return cles
+
+
+def reperer_invalides(racine: Path) -> list[str]:
+    """Dossiers `wal.jsonl` hors clés valides (diagnostic `/status`, sans verrou)."""
+    valides = set(inventorier_racine(racine))
+    invalides = []
+    for chemin in sorted(racine.rglob("wal.jsonl")):
+        try:
+            cle = str(chemin.parent.relative_to(racine)).replace("\\", "/")
+        except ValueError:
+            continue
+        if cle not in valides:
+            invalides.append(cle)
+    return invalides
+
+
+def lire_domaine(
+    racine: Path, domaine: str, seuils: tuple[float, float] | None = None
+) -> tuple[Memoire, int]:
+    """Lecture seule d'un domaine, sans verrou (CLI `query`).
+
+    Même pipeline que `Magasin.recharger` (snapshot + rejeu WAL +
+    `memoire_depuis_etat`), sans prendre `sa.lock` : utilisable pendant
+    que l'agent tourne. `seuils` = tiers directive (`None` ⇒ défaut
+    canonique du schéma). Lève `StoreError` si le domaine est inconnu.
+    """
+    dossier = racine / "domains" / domaine
+    if not dossier.is_dir():
+        raise StoreError(f"domaine inconnu : {domaine}")
+    cle = f"domains/{domaine}"
+    with WAL(dossier / "wal.jsonl", verrouiller=False) as journal:
+        charge = charger(dossier, journal, appliquer=appliquer_domaine, stream=cle)
+    return memoire_depuis_etat(domaine, charge.etat, seuils)
 
 
 class StoreError(Exception):
@@ -168,15 +224,7 @@ class Magasin:
 
     def inventorier(self) -> list[str]:
         """Clés des streams présents sur disque (valides uniquement)."""
-        cles = []
-        for chemin in sorted(self._racine.rglob("wal.jsonl")):
-            try:
-                cle = str(chemin.parent.relative_to(self._racine)).replace("\\", "/")
-                self._parties(cle)
-            except (StoreError, ValueError):
-                continue
-            cles.append(cle)
-        return cles
+        return inventorier_racine(self._racine)
 
     def _dossier(self, cle: str) -> Path:
         try:
@@ -186,9 +234,4 @@ class Magasin:
 
     @staticmethod
     def _parties(cle: str) -> tuple[str, ...]:
-        parties = tuple(cle.split("/"))
-        if len(parties) < 2 or len(parties) > 3 or parties[0] not in RACINES:
-            raise StoreError(
-                f"clé de stream invalide : {cle!r} (domains/<d>[/<sous>] ou registry/<nom>)"
-            )
-        return parties
+        return parties_cle(cle)

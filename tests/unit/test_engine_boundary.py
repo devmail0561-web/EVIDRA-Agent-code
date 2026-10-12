@@ -57,6 +57,38 @@ def test_aucun_import_moteur_hors_engine_bridge():
     assert bad == []
 
 
+# Scaffold dev opt-in (`--essai`, jamais en prod, « À REMPLACER quand B2 ») :
+# seul fichier du bridge autorisé hors liste blanche, à jeu figé.
+ESSAI_AUTORISES = frozenset(
+    {
+        "gcn_python.constants.NODE_TYPES",
+        "gcn_python.constants.RELATION_TYPES",
+        "gcn_python.constants.rgcn_n_relations",
+        "gcn_python.engine.GCNEngine",
+        "gcn_python.frontend.bridge.GCNLatticeParser",
+        "gcn_python.layer1.embedding.WordEmbedding",
+        "gcn_python.layer1.features.FeatureVocabulary",
+        "gcn_python.layer1.representation.UDRepresentation",
+        "gcn_python.layer2.reference.MLPEncoder",
+        "gcn_python.layer3.reference.RGCNLayer",
+        "gcn_python.pipeline.cgnp.CGNPipeline",
+    }
+)
+
+
+def test_liste_blanche_dans_engine_bridge():
+    """Dans le bridge, seuls liste blanche (+ `essai.py` figé) touchent `gcn`."""
+    bad: list[str] = []
+    for path in sorted(BRIDGE.rglob("*.py")):
+        trouves = violations(path.read_text())
+        if path.name == "essai.py":
+            if set(trouves) != ESSAI_AUTORISES:
+                bad.append(f"{path.name}: dérive du scaffold ({sorted(trouves)})")
+        else:
+            bad.extend(f"{path.relative_to(SRC)}: {v}" for v in trouves)
+    assert bad == []
+
+
 def test_subprocess_gcn_reserve_engine_bridge():
     """Seul `engine_bridge` spawne `gcn` (ADR-0012/0013) ; le noyau jamais."""
     import ast as _ast

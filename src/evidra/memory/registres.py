@@ -150,8 +150,15 @@ class Registres:
         )
 
     def relever_expiration(self, maintenant_iso: str) -> list[str]:
-        """Marque `abandoned` (motivé) les tâches dépassées non terminées."""
-        maintenant = datetime.fromisoformat(maintenant_iso)
+        """Marque `abandoned` (motivé) les tâches dépassées non terminées.
+
+        Tolérant (I12) : horloge ou deadline illisible (naive/aware mélangés
+        inclus) ⇒ tâche ignorée, jamais de levée vers le tick.
+        """
+        try:
+            maintenant = datetime.fromisoformat(maintenant_iso)
+        except (TypeError, ValueError):
+            return []
         abandonnees: list[str] = []
         etat = self._magasin.recharger(FLUX_TACHES).etat
         for cle, fiche in sorted(etat.items()):
@@ -161,9 +168,10 @@ class Registres:
                 continue
             try:
                 echeance = datetime.fromisoformat(str(fiche.get("deadline", "")))
-            except ValueError:
+                compare = echeance < maintenant
+            except (TypeError, ValueError):
                 continue
-            if echeance < maintenant:
+            if compare:
                 self.passer_etat(str(fiche["id"]), EtatTache.ABANDONNEE, motif="deadline dépassée")
                 abandonnees.append(str(fiche["id"]))
         return abandonnees

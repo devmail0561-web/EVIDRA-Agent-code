@@ -10,17 +10,31 @@ l'absence de preuve n'est pas une réfutation, §5.3). Les verdicts
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any
-
-from gcn_python.reasoning.engine import reason as raison_moteur
-from gcn_python.reasoning.engine import verify_path as verifie_moteur
 
 from evidra.engine_bridge.reason import _derives_marqués, _normaliser
 from evidra.engine_bridge.travailleur import WorkerTimeout, lancer
 from evidra.kernel.contracts import Status, ToolResult
 
 Verificateur = Callable[..., Any]
+
+_LOG = logging.getLogger(__name__)
+
+
+def _raison_moteur_defaut() -> Callable[..., dict[str, Any]]:
+    """Import paresseux : `import evidra.engine_bridge.validate` sans moteur OK."""
+    from gcn_python.reasoning.engine import reason as raison
+
+    return raison
+
+
+def _verificateur_moteur_defaut() -> Verificateur:
+    """Import paresseux (idem)."""
+    from gcn_python.reasoning.engine import verify_path as verifie
+
+    return verifie
 
 
 def _chemin_ids(reponse: dict[str, Any]) -> list[Any]:
@@ -38,8 +52,8 @@ def verifier_lien(
     budget: int = 16,
     min_conf: float = 0.0,
     timeout_s: float = 30.0,
-    raison: Callable[..., dict[str, Any]] = raison_moteur,
-    verificateur: Verificateur = verifie_moteur,
+    raison: Callable[..., dict[str, Any]] | None = None,
+    verificateur: Verificateur | None = None,
 ) -> ToolResult:
     """Lien causal ? `trouve` + chemin + confiance + preuves citées."""
     if (
@@ -52,6 +66,15 @@ def verifier_lien(
         return ToolResult(
             status=Status.FAILED, payload={"trouve": False, "motif": "labels invalides"}
         )
+    if raison is None or verificateur is None:
+        try:
+            raison = raison or _raison_moteur_defaut()
+            verificateur = verificateur or _verificateur_moteur_defaut()
+        except Exception as exc:
+            return ToolResult(
+                status=Status.FAILED,
+                payload={"trouve": False, "motif": f"moteur non importable : {exc}"},
+            )
     try:
         reponse = lancer(lambda: raison(src_label, dst_label, graphe, budget=budget), timeout_s)
     except WorkerTimeout:
@@ -60,6 +83,7 @@ def verifier_lien(
             payload={"trouve": False, "motif": f"validate en timeout ({timeout_s}s)"},
         )
     except Exception as exc:  # noqa: BLE001 — toute panne moteur devient `failed`
+        _LOG.exception("panne moteur validate")
         return ToolResult(
             status=Status.FAILED, payload={"trouve": False, "motif": f"panne moteur : {exc}"}
         )
@@ -82,6 +106,7 @@ def verifier_lien(
     try:
         verdict = verificateur(_chemin_ids(reponse), graphe, min_conf=min_conf)
     except Exception as exc:  # noqa: BLE001 — vérification indécidable ⇒ pas trouvé
+        _LOG.exception("vérification indécidable")
         return ToolResult(
             status=Status.DEGRADE,
             payload={

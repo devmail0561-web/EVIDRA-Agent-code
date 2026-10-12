@@ -44,6 +44,14 @@ def test_invalide_chemin_precis() -> None:
         valider({**_dogfood(), "delegate": "actif"})
     with pytest.raises(DirectiveError):
         valider({**_dogfood(), "seuils_provisoires": {"seuil_quorum": 2.0, "seuil_revision": 1.5}})
+
+
+def test_seuils_tiers_defaut_et_valides() -> None:
+    assert valider(_dogfood()).quality.seuils_tiers == (0.85, 0.65)
+    dogfood = {**_dogfood(), "quality": {"seuils_tiers": [0.9, 0.4]}}
+    assert valider(dogfood).quality.seuils_tiers == (0.9, 0.4)
+    with pytest.raises(DirectiveError, match="seuils_tiers"):
+        valider({**_dogfood(), "quality": {"seuils_tiers": [0.4, 0.9]}})
     with pytest.raises(DirectiveError, match="alert_on_new_relation_involving"):
         valider({**_dogfood(), "monitoring": {"alert_on_new_relation_involving": ["(["]}})
 

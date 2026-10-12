@@ -16,6 +16,7 @@ s'applique déjà (ex. `AUTH` confirme `auth`, sans dupliquer).
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -25,8 +26,11 @@ from evidra.kernel.gate import Policy, can, refuse
 from evidra.kernel.manifest import Permission
 from evidra.memory.envelope import CirCore, resume
 from evidra.memory.memoire import Memoire
+from evidra.util import garde
 
 FLUX_DOMAINE = "domains/{}"
+
+_LOG = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,10 +86,7 @@ class OutilIngest:
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Pipeline F1 : porte → seuils → mémoire → WAL → reçu (jamais levée)."""
-        try:
-            return self._run(ctx, args)
-        except Exception as exc:  # noqa: BLE001 — l'outil ne lève jamais
-            return ToolResult(status=Status.FAILED, payload={"motif": f"panne ingest : {exc}"})
+        return garde(self.name, lambda: self._run(ctx, args), journal=_LOG)
 
     def _run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         decision = can(self._politique, self.name, Verb.INGEST, ctx.domain)
