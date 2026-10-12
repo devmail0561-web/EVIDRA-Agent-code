@@ -31,6 +31,7 @@ ECRIVAINS_AUTORISES = frozenset(
         "arbitrage_cli.py",  # verdicts T6.4 (update_status/tombstone motivés)
         "tools/alert.py",  # alertes T7.2 (lever/envoi, via Registres)
         "boot/demarrage.py",  # expiration tâches au boot (via Registres)
+        "api/app.py",  # versions directive T8.3 (registry/directive, fil scheduler)
     }
 )
 

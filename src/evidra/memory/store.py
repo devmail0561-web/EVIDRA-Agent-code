@@ -15,6 +15,7 @@ avec la fonction `appliquer` enregistrée par flux (fail-closed sinon).
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -71,6 +72,41 @@ def reperer_invalides(racine: Path) -> list[str]:
         if cle not in valides:
             invalides.append(cle)
     return invalides
+
+
+def etat_racine(racine: Path) -> dict[str, Any]:
+    """État d'un `data_dir` (CLI `status`, API `/status`) : manifeste + streams.
+
+    Lecture seule, sans verrou, tolérante (I12) : manifeste corrompu ⇒ `{}`
+    + avertissement, jamais levée.
+    """
+    manifeste: dict[str, Any] = {}
+    avertissements: list[str] = []
+    chemin_manifeste = racine / "sa_manifest.json"
+    if chemin_manifeste.exists():
+        try:
+            brut = json.loads(chemin_manifeste.read_text(encoding="utf-8"))
+            if isinstance(brut, dict):
+                manifeste = brut
+            else:
+                avertissements.append("manifeste non-objet, ignoré")
+        except ValueError:
+            avertissements.append("manifeste illisible, ignoré")
+    streams = []
+    for cle in inventorier_racine(racine):
+        dossier = racine.joinpath(*cle.split("/"))
+        with WAL(dossier / "wal.jsonl", verrouiller=False) as journal:
+            charge = charger(dossier, journal, appliquer=appliquer_domaine, stream=cle)
+        streams.append(charge.rapport.en_dict() if charge.rapport is not None else {"stream": cle})
+    invalides = sorted(reperer_invalides(racine))
+    if invalides:
+        avertissements.append(f"{len(invalides)} stream(s) hors clés : {invalides}")
+    return {
+        "manifeste": manifeste,
+        "streams": streams,
+        "invalides": invalides,
+        "avertissements": avertissements,
+    }
 
 
 def lire_domaine(

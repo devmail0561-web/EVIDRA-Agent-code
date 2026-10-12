@@ -52,6 +52,29 @@
       "title": "AgentPair",
       "type": "object"
     },
+    "ApiConfig": {
+      "additionalProperties": false,
+      "description": "Exposition HTTP (T8.3) : vide = ouvert dev/dogfood (document\u00e9).",
+      "properties": {
+        "cles_directive": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "cl\u00e9_id \u2192 secret HMAC (fichier 0600, jamais repo, T8.3)",
+          "title": "Cles Directive",
+          "type": "object"
+        },
+        "jetons": {
+          "items": {
+            "$ref": "#/$defs/JetonApi"
+          },
+          "title": "Jetons",
+          "type": "array"
+        }
+      },
+      "title": "ApiConfig",
+      "type": "object"
+    },
     "Budgets": {
       "additionalProperties": false,
       "description": "Budgets par cycle (scheduler T1.5, directive T4.4).",
@@ -109,6 +132,36 @@
         }
       },
       "title": "Budgets",
+      "type": "object"
+    },
+    "JetonApi": {
+      "additionalProperties": false,
+      "description": "Jeton porteur : empreinte SHA-256 (jamais le secret), verbes li\u00e9s (T8.3).",
+      "properties": {
+        "empreinte": {
+          "description": "hex SHA-256 du jeton",
+          "minLength": 16,
+          "title": "Empreinte",
+          "type": "string"
+        },
+        "nom": {
+          "minLength": 1,
+          "title": "Nom",
+          "type": "string"
+        },
+        "verbes": {
+          "items": {
+            "$ref": "#/$defs/Verb"
+          },
+          "title": "Verbes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "nom",
+        "empreinte"
+      ],
+      "title": "JetonApi",
       "type": "object"
     },
     "PermissionDirective": {
@@ -463,6 +516,9 @@
       "description": "table d'alias par domaine (promotion humaine, \u00a719)",
       "title": "Aliases",
       "type": "object"
+    },
+    "api": {
+      "$ref": "#/$defs/ApiConfig"
     },
     "budgets": {
       "$ref": "#/$defs/Budgets"

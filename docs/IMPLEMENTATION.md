@@ -208,3 +208,13 @@ Toujours reporté (inchangé, assumé) : `tools/ → memory/` direct, P1–P3 mo
 - **T7.3** (`monitor/lacunes.py` pur + `evidra lacunes` verrouillé) : formulation canonique, priorité surveillée d'abord (stable), `fiche_tache` P4 `fetch` budgétée ; `creer_tache(extras=)` compatible ; chaînes = `watch_gaps_in_chains` (passé en `list[list[str]]`, schéma re-exporté) ; sans binaire ⇒ gracieux (0 tâche). Consommateur `fetch` futur documenté.
 - **T7.4** : `benchmarks/alertes-corpus.json` (12 événements ground truth) + `tests/bench/test_corpus_alertes.py` (**P=1.0, R=1.0 mesurés sur synthétique — pas un SLO opposable**) + `scripts/charge_72h.py` (protocole 72 h, fumé 2 s : 37 ticks, 18.5 ticks/s).
 - Garde I3 étendue (mutateurs `Registres`, maille documentée) : 8 fichiers. Compteur : **378 tests**, noyau 499/500, gardes vertes.
+
+## 19. Phase 8 — API de service (T8.1–T8.6, J8 clos)
+
+- **T8.1** (`api/pont.py`) : fil HTTP = dépôt d'événements + `Future` + timeout (jamais de mémoire) ; `ContexteAPI` (fabriques exécutées fil scheduler, `lire_etat`/`lire_alertes` idem) ; `contexte_depuis_rapport()` ; `Boucle.deposer()` public (fini l'accès privé) ; correspondance ok→200, degrade→200+warnings, refused→403, failed→500, timeout→504, sans moteur→503.
+- **T8.2** (`api/app.py`, 10 chemins) : `POST /analyze|/ingest|/validate`, `GET /query/causes|effects|chain` (`domaine` + `format=llm|human|agent`), `GET /status|/alerts` ; schémas Pydantic ; OpenAPI exportée (`scripts/exporter_openapi.py`, `docs/contrats/openapi.json`, garde CI anti-drift) ; `store.etat_racine()` partagé (`cmd_status` dédupliqué).
+- **T8.3** (`api/auth.py`, `Directive.api`) : jetons (empreinte SHA-256, temps constant, verbes liés), mode ouvert documenté sans jetons ; `POST /directive` (verbe `modify` + HMAC `X-Signature`, validation avant écriture atomique, version WAL `registry/directive`) + `POST /directive/rollback` (version précédente restaurée) ; écoute `127.0.0.1` par défaut.
+- **T8.4** : `/status` via événement P3 (single-writer absolu, même pour la lecture).
+- **T8.5** : `tests/api/` (contrats, formats, 401/403, directive signée/rollback, 503, charge 8×32 sans corruption) + `test_pont_api.py` (mapping, timeout 504) ; skip explicite sous `--disable-socket` (TestClient exige loopback) ; CI : extras `api`+`network`, job OpenAPI.
+- **T8.6** : `evidra serve` (+ `--hote/--port/--essai`) + `docs/runbook.md` (démarrage, auth, crash, compaction, alertes).
+- Compteur : **394 tests** (378 + 16 API/pont), noyau 499/500, `mypy` 21 fichiers (api hors strict : fastapi optionnel), `lint-imports` KEPT, I9 7 constantes.

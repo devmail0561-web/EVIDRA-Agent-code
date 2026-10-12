@@ -136,6 +136,10 @@ class Boucle:
             if not arret.is_set():
                 arret.wait(delai)
 
+    def deposer(self, niveau: Priorite, effet: Effet):
+        """Dépose un événement externe (API, T8.1) ; `Future` résolu au tick."""
+        return self._ordonnanceur.deposer(niveau, effet)
+
     def _tiede(self) -> bool:
         gardien = self._surveillant
         if gardien is None:

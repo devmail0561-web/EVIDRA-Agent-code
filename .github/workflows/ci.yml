@@ -26,9 +26,9 @@ jobs:
       - name: Installer uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Sync dépendances
+      - name: Sync dépendances (+ extras API)
         working-directory: harness-gcn
-        run: uv sync --group dev --frozen
+        run: uv sync --group dev --extra api --extra network --frozen
 
       - name: Ruff (lint)
         working-directory: harness-gcn
@@ -57,3 +57,7 @@ jobs:
       - name: Tests + couverture
         working-directory: harness-gcn
         run: uv run pytest -q --cov=evidra --cov-report=term-missing
+
+      - name: OpenAPI à jour
+        working-directory: harness-gcn
+        run: uv run python scripts/exporter_openapi.py --data-dir /tmp/ci-data --directive directives/code.dogfood.json && git diff --exit-code docs/contrats/openapi.json

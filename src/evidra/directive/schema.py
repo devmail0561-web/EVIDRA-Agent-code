@@ -205,6 +205,24 @@ class AgentPair(_Base):
     max_confidence_accepted: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
+class JetonApi(_Base):
+    """Jeton porteur : empreinte SHA-256 (jamais le secret), verbes liés (T8.3)."""
+
+    nom: str = Field(min_length=1)
+    empreinte: str = Field(min_length=16, description="hex SHA-256 du jeton")
+    verbes: list[Verb] = Field(default_factory=list)
+
+
+class ApiConfig(_Base):
+    """Exposition HTTP (T8.3) : vide = ouvert dev/dogfood (documenté)."""
+
+    jetons: list[JetonApi] = Field(default_factory=list)
+    cles_directive: dict[str, str] = Field(
+        default_factory=dict,
+        description="clé_id → secret HMAC (fichier 0600, jamais repo, T8.3)",
+    )
+
+
 class Directive(_Base):
     """Directive : mission complète d'un agent sur un domaine (§9.3)."""
 
@@ -234,6 +252,7 @@ class Directive(_Base):
     )
     semantic_index_min_edges: int = Field(default=500000, gt=0)
     trusted_agents: list[AgentPair] = Field(default_factory=list)
+    api: ApiConfig = Field(default_factory=ApiConfig)
 
     @field_validator("channel_ceilings")
     @classmethod

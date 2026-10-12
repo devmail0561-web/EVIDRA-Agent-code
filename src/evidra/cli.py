@@ -98,6 +98,16 @@ def main(argv: list[str] | None = None) -> int:
     lacunes.add_argument("--deadline", required=False, default=None)
     lacunes.set_defaults(fonction=_cmd_lacunes)
 
+    serve = sous.add_parser("serve", help="API HTTP : boucle + uvicorn (127.0.0.1 par défaut)")
+    serve.add_argument("--directive", required=True)
+    serve.add_argument("--data-dir", required=True)
+    serve.add_argument(
+        "--essai", action="store_true", help="moteur d'essai non calibré (B1, dev uniquement)"
+    )
+    serve.add_argument("--hote", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8000)
+    serve.set_defaults(fonction=cmd_serve)
+
     args = parser.parse_args(argv)
     try:
         return int(args.fonction(args))
@@ -311,43 +321,9 @@ def cmd_status(args: argparse.Namespace) -> int:
     Tolérant (I12) : manifeste corrompu ⇒ `{}` + avertissement, jamais exit 1 ;
     streams hors clés ⇒ comptés dans `invalides`, jamais crash.
     """
-    from evidra.memory.memoire import appliquer_domaine
-    from evidra.memory.snapshot import charger
-    from evidra.memory.store import inventorier_racine, reperer_invalides
-    from evidra.memory.wal import WAL
+    from evidra.memory.store import etat_racine
 
-    racine = Path(args.data_dir)
-    manifeste: dict = {}
-    avertissements = []
-    chemin_manifeste = racine / "sa_manifest.json"
-    if chemin_manifeste.exists():
-        try:
-            brut = json.loads(chemin_manifeste.read_text(encoding="utf-8"))
-            manifeste = brut if isinstance(brut, dict) else {}
-            if not isinstance(brut, dict):
-                avertissements.append("manifeste non-objet, ignoré")
-        except ValueError:
-            avertissements.append("manifeste illisible, ignoré")
-    streams = []
-    for cle in inventorier_racine(racine):
-        dossier = racine.joinpath(*cle.split("/"))
-        with WAL(dossier / "wal.jsonl", verrouiller=False) as journal:
-            charge = charger(dossier, journal, appliquer=appliquer_domaine, stream=cle)
-        streams.append(charge.rapport.en_dict() if charge.rapport is not None else {"stream": cle})
-    invalides = reperer_invalides(racine)
-    if invalides:
-        avertissements.append(f"{len(invalides)} stream(s) hors clés : {sorted(invalides)}")
-    print(
-        json.dumps(
-            {
-                "manifeste": manifeste,
-                "streams": streams,
-                "invalides": sorted(invalides),
-                "avertissements": avertissements,
-            },
-            ensure_ascii=False,
-        )
-    )
+    print(json.dumps(etat_racine(Path(args.data_dir)), ensure_ascii=False))
     return 0
 
 
@@ -421,4 +397,39 @@ def cmd_aliases(args: argparse.Namespace) -> int:
             ensure_ascii=False,
         )
     )
+    return 0
+
+
+def cmd_serve(args: argparse.Namespace) -> int:
+    """API HTTP (T8.6) : démarrage complet + uvicorn (extra `api` requis)."""
+    try:
+        import uvicorn  # noqa: F401 — extra `api`, jamais en dépendance dure
+    except ImportError:
+        print(
+            json.dumps({"erreur": "extra `api` manquant : uv sync --extra api"}),
+            ensure_ascii=False,
+            file=sys.stderr,
+        )
+        return 1
+    from evidra.api.app import creer_app
+    from evidra.api.auth import autheur_depuis_directive
+    from evidra.api.pont import contexte_depuis_rapport
+    from evidra.boot.demarrage import demarrer
+
+    moteur = _moteur_essai_ou_rien(args.essai)
+    rapport = demarrer(
+        data_dir=Path(args.data_dir),
+        directive_path=Path(args.directive),
+        moteur=moteur,
+    )
+    if rapport.boucle is None:
+        print(json.dumps({"erreur": "boucle indisponible"}), file=sys.stderr)
+        return 1
+    ctx = contexte_depuis_rapport(rapport, Path(args.data_dir), moteur=moteur)
+    if ctx is None:
+        print(json.dumps({"erreur": "contexte API indisponible"}), file=sys.stderr)
+        return 1
+    autheur = autheur_depuis_directive(rapport.directive) if rapport.directive else None
+    app = creer_app(rapport.boucle, ctx, autheur=autheur, directive_path=Path(args.directive))
+    uvicorn.run(app, host=args.hote, port=args.port)
     return 0
