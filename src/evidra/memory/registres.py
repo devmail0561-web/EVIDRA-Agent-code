@@ -1,6 +1,6 @@
 # Copyright 2026 Michel Tendeng
 # SPDX-License-Identifier: Apache-2.0
-"""Registres (T2.6) : sources, alias, modèles, tâches — 4 streams WAL.
+"""Registres (T2.6) : sources, alias, modèles, tâches, alertes — 5 streams WAL.
 
 Même code WAL (un seul mécanisme prouvé) ; rejeu tolérant par ligne hérité.
 `tâches` : `id`, `type`, `budget`, `deadline`, `état` ; expiration ⇒
@@ -25,6 +25,7 @@ FLUX_SOURCES = "registry/sources"
 FLUX_ALIAS = "registry/aliases"
 FLUX_MODELES = "registry/models"
 FLUX_TACHES = "registry/tasks"
+FLUX_ALERTES = "registry/alertes"
 
 
 class EtatTache(StrEnum):
@@ -37,7 +38,7 @@ class EtatTache(StrEnum):
 
 
 def _appliquer_dict(etat: dict[str, Any], enr: Enregistrement) -> None:
-    """Upsert générique (`tombstone` = retrait) pour les 4 registres."""
+    """Upsert générique (`tombstone` = retrait) pour les 5 registres."""
     if enr.op in ("receipt", "drop"):
         return  # audit seul, aucun effet d'état (patch P1)
     if enr.op == "tombstone":
@@ -47,11 +48,11 @@ def _appliquer_dict(etat: dict[str, Any], enr: Enregistrement) -> None:
 
 
 class Registres:
-    """Façade typée sur les 4 streams de registres d'un magasin."""
+    """Façade typée sur les 5 streams de registres d'un magasin."""
 
     def __init__(self, magasin: Magasin) -> None:
         self._magasin = magasin
-        for flux in (FLUX_SOURCES, FLUX_ALIAS, FLUX_MODELES, FLUX_TACHES):
+        for flux in (FLUX_SOURCES, FLUX_ALIAS, FLUX_MODELES, FLUX_TACHES, FLUX_ALERTES):
             magasin.definir_appliquer(flux, _appliquer_dict)
 
     def noter_source(self, uri: str, champs: Mapping[str, Any]) -> int:
@@ -107,24 +108,38 @@ class Registres:
         """Tous les modèles consignés (vide tant que B2 n'est pas levé)."""
         return self._magasin.recharger(FLUX_MODELES).etat
 
-    def creer_tache(self, ident: str, type_tache: str, budget: float, deadline: str) -> int:
-        """Crée une tâche `pending` (budget et deadline opaques ici)."""
+    def creer_tache(
+        self,
+        ident: str,
+        type_tache: str,
+        budget: float,
+        deadline: str,
+        extras: Mapping[str, Any] | None = None,
+    ) -> int:
+        """Crée une tâche `pending` (budget et deadline opaques ici).
+
+        `extras` : charge informative (question, chaîne…) lue par le
+        consommateur futur, ignorée par les consommateurs actuels.
+        """
+        donnees: dict[str, Any] = {
+            "id": ident,
+            "type": type_tache,
+            "budget": budget,
+            "consomme_ms": 0.0,
+            "consomme_appels": 0,
+            "deadline": deadline,
+            "etat": EtatTache.ATTENTE.value,
+            "motif": "",
+        }
+        if extras:
+            donnees.update({k: v for k, v in extras.items() if k not in donnees})
         return self._magasin.append(
             FLUX_TACHES,
             Record(
                 stream=FLUX_TACHES,
                 op="put",
                 key=f"task:{ident}",
-                data={
-                    "id": ident,
-                    "type": type_tache,
-                    "budget": budget,
-                    "consomme_ms": 0.0,
-                    "consomme_appels": 0,
-                    "deadline": deadline,
-                    "etat": EtatTache.ATTENTE.value,
-                    "motif": "",
-                },
+                data=donnees,
             ),
         )
 
@@ -207,3 +222,56 @@ class Registres:
             return None
         curseur = trouve.data.get("curseur")
         return curseur if isinstance(curseur, str) else None
+
+    def lever_alerte(self, cle: str, fiche: Mapping[str, Any]) -> int:
+        """Lève une alerte (`active`, T7.2) ; réémission gérée par l'appelant."""
+        donnees = dict(fiche)
+        donnees["etat"] = "active"
+        return self._magasin.append(
+            FLUX_ALERTES, Record(stream=FLUX_ALERTES, op="lever", key=cle, data=donnees)
+        )
+
+    def noter_envoi(self, cle: str, horodatage: str) -> int:
+        """Horodate le dernier envoi d'une alerte (fenêtre dédup, T7.2)."""
+        return self._magasin.append(
+            FLUX_ALERTES,
+            Record(stream=FLUX_ALERTES, op="envoi", key=f"envoi:{cle}", data={"a": horodatage}),
+        )
+
+    def acquitter_alerte(self, cle: str, *, motif: str) -> int:
+        """Acquitte une alerte active (motif exigé, persisté)."""
+        if not motif or not motif.strip():
+            raise ValueError("acquittement sans motif refusé")
+        fiche = self.alerte(cle)
+        if fiche is None:
+            raise ValueError(f"alerte inconnue : {cle!r}")
+        donnees = dict(fiche)
+        donnees["etat"] = "acquittee"
+        donnees["motif_acquittement"] = motif
+        return self._magasin.append(
+            FLUX_ALERTES, Record(stream=FLUX_ALERTES, op="acquitter", key=cle, data=donnees)
+        )
+
+    def alerte(self, cle: str) -> dict[str, Any] | None:
+        """Fiche alerte, `None` si inconnue."""
+        trouve = self._magasin.lookup(FLUX_ALERTES, cle)
+        return dict(trouve.data) if trouve is not None else None
+
+    def alertes_actives(self) -> dict[str, dict[str, Any]]:
+        """Alertes `active` non acquittées (P1, T7.2)."""
+        etat = self._magasin.recharger(FLUX_ALERTES).etat
+        return {
+            cle: fiche
+            for cle, fiche in etat.items()
+            if isinstance(fiche, dict)
+            and not cle.startswith("envoi:")
+            and fiche.get("etat") == "active"
+        }
+
+    def dernier_envoi(self, cle: str) -> str | None:
+        """Dernier envoi horodaté d'une alerte, `None` si jamais émise."""
+        trouve = self._magasin.lookup(FLUX_ALERTES, f"envoi:{cle}")
+        if trouve is None:
+            return None
+        horodatage = trouve.data.get("a")
+        return horodatage if isinstance(horodatage, str) else None

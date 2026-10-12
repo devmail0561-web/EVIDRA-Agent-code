@@ -66,6 +66,7 @@ class Boucle:
         outils: Mapping[str, Effet],
         surveillant: Surveillant | None = None,
         horloge: Callable[[], str] | None = None,
+        alerteur: Callable[[], tuple[str, ...]] | None = None,
     ) -> None:
         self._domaine = domaine
         self._ordonnanceur = ordonnanceur
@@ -74,6 +75,7 @@ class Boucle:
         self._outils = dict(outils)
         self._surveillant = surveillant
         self._horloge = horloge
+        self._alerteur = alerteur
         self._politique = Policy()
         self._hash_directive = surveillant.empreinte_courante() if surveillant is not None else ""
         self._actifs: set[Priorite] = set()
@@ -202,6 +204,7 @@ class Boucle:
             )
 
         return Situation(
+            alertes_actives=tuple(self._alerteur()) if self._alerteur is not None else (),
             donnees=en_attente(Priorite.P4),
             stales=en_attente(Priorite.P5),
             fond=bool(en_attente(Priorite.P6)),

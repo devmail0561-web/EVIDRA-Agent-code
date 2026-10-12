@@ -200,3 +200,11 @@ Toujours reporté (inchangé, assumé) : `tools/ → memory/` direct, P1–P3 mo
 - **T6.8** : `phases["domaines"]["demarrage_a_froid"]` tracé ; UNCONFIRMED au jour 0 testé normal (validate sur graphe vide).
 - Garde I3 resserrée (`self.flux(..).append` seul, `setdefault(..).append` exclu). **J6 clos.**
 - Compteur : **360 tests**, noyau 499/500, `mypy` 21 fichiers, `lint-imports` KEPT, I9 7 constantes, offline vert.
+
+## 18. Phase 7 — moniteur et alertes (T7.1–T7.4, J7 clos)
+
+- **T7.1** (`monitor/conditions.py`, pur) : `Condition` (nom/sévérité/clé/detail), 4 conditions testables sans moteur ni disque (nouvelle relation regex, haute confiance invalidée, conflit non résolu, source suspecte) + `motif_dangereux` anti-ReDoS (compilable, ≤200, sans quantificateurs imbriqués — regex elle-même sans warning).
+- **T7.2** : `monitor/alerts.py` (`doit_emettre` pur : jamais/acquittée/fenêtre) ; stream `registry/alertes` (`lever/noter_envoi/acquitter/alerte/actives/dernier_envoi`, motif d'acquittement exigé) ; `tools/alert.py` P1 (conditions sur mémoires vivantes + sources registre, dédup, JSONL local toujours, egress `alert_endpoint` best-effort → `DEGRADE` hors ligne, jamais bloqué) + entry-point ; `Surveillance` += `dedup_fenetre_s`, `alert_endpoint`, `seuil_invalidation`. P1 câblée : `Boucle(alerteur=)` (actives + `nouveautes` si WAL bougé, cache O(1)) + effet `alert` construit par `demarrage` (surchargable) + champ `alert` au rapport.
+- **T7.3** (`monitor/lacunes.py` pur + `evidra lacunes` verrouillé) : formulation canonique, priorité surveillée d'abord (stable), `fiche_tache` P4 `fetch` budgétée ; `creer_tache(extras=)` compatible ; chaînes = `watch_gaps_in_chains` (passé en `list[list[str]]`, schéma re-exporté) ; sans binaire ⇒ gracieux (0 tâche). Consommateur `fetch` futur documenté.
+- **T7.4** : `benchmarks/alertes-corpus.json` (12 événements ground truth) + `tests/bench/test_corpus_alertes.py` (**P=1.0, R=1.0 mesurés sur synthétique — pas un SLO opposable**) + `scripts/charge_72h.py` (protocole 72 h, fumé 2 s : 37 ticks, 18.5 ticks/s).
+- Garde I3 étendue (mutateurs `Registres`, maille documentée) : 8 fichiers. Compteur : **378 tests**, noyau 499/500, gardes vertes.

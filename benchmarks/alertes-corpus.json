@@ -1,0 +1,204 @@
+{
+  "_note": "Corpus synthétique T7.4 (ground truth, traçable, jamais du gold). Chaque événement porte ses conditions attendues ; la mesure est calculée, pas annoncée.",
+  "evenements": [
+    {
+      "id": "e01",
+      "triplet": [
+        "code",
+        "ransomware x",
+        "cause",
+        "panne"
+      ],
+      "statut": "nouvelle",
+      "confiance": 0.9,
+      "motifs": [
+        "ransomware"
+      ],
+      "source": "monitored",
+      "attendues": [
+        "nouvelle_relation_surveillee"
+      ]
+    },
+    {
+      "id": "e02",
+      "triplet": [
+        "code",
+        "soleil",
+        "cause",
+        "pluie"
+      ],
+      "statut": "nouvelle",
+      "confiance": 0.9,
+      "motifs": [
+        "ransomware"
+      ],
+      "source": "monitored",
+      "attendues": []
+    },
+    {
+      "id": "e03",
+      "triplet": [
+        "code",
+        "a",
+        "cause",
+        "b"
+      ],
+      "statut": "invalidee",
+      "confiance": 0.9,
+      "motifs": [],
+      "source": "monitored",
+      "attendues": [
+        "haute_confiance_invalidee"
+      ]
+    },
+    {
+      "id": "e04",
+      "triplet": [
+        "code",
+        "a",
+        "cause",
+        "b"
+      ],
+      "statut": "invalidee",
+      "confiance": 0.5,
+      "motifs": [],
+      "source": "monitored",
+      "attendues": []
+    },
+    {
+      "id": "e05",
+      "triplet": [
+        "code",
+        "a",
+        "cause",
+        "b"
+      ],
+      "statut": "en_revision",
+      "confiance": 0.7,
+      "motifs": [],
+      "source": "monitored",
+      "attendues": [
+        "conflit_non_resolu"
+      ]
+    },
+    {
+      "id": "e06",
+      "triplet": [
+        "code",
+        "a",
+        "cause",
+        "b"
+      ],
+      "statut": "confirmee",
+      "confiance": 0.9,
+      "motifs": [],
+      "source": "monitored",
+      "attendues": []
+    },
+    {
+      "id": "e07",
+      "triplet": [
+        "code",
+        "a",
+        "cause",
+        "b"
+      ],
+      "statut": "confirmee",
+      "confiance": 0.9,
+      "motifs": [],
+      "source": "suspect",
+      "attendues": [
+        "source_suspecte"
+      ]
+    },
+    {
+      "id": "e08",
+      "triplet": [
+        "code",
+        "a",
+        "cause",
+        "b"
+      ],
+      "statut": "confirmee",
+      "confiance": 0.9,
+      "motifs": [],
+      "source": "trusted",
+      "attendues": []
+    },
+    {
+      "id": "e09",
+      "triplet": [
+        "code",
+        "phishing ciblé",
+        "cause",
+        "fuite"
+      ],
+      "statut": "invalidee",
+      "confiance": 0.85,
+      "motifs": [
+        "phishing"
+      ],
+      "source": "suspect",
+      "attendues": [
+        "nouvelle_relation_surveillee",
+        "haute_confiance_invalidee",
+        "source_suspecte"
+      ]
+    },
+    {
+      "id": "e10",
+      "triplet": [
+        "code",
+        "ransomware actif",
+        "cause",
+        "panne"
+      ],
+      "statut": "active",
+      "confiance": 0.7,
+      "motifs": [
+        "ransomware"
+      ],
+      "source": "monitored",
+      "attendues": [
+        "nouvelle_relation_surveillee"
+      ]
+    },
+    {
+      "id": "e11",
+      "triplet": [
+        "code",
+        "cve-2024-0001",
+        "cause",
+        "intrusion"
+      ],
+      "statut": "en_revision",
+      "confiance": 0.6,
+      "motifs": [
+        "cve-2024-.*"
+      ],
+      "source": "monitored",
+      "attendues": [
+        "nouvelle_relation_surveillee",
+        "conflit_non_resolu"
+      ]
+    },
+    {
+      "id": "e12",
+      "triplet": [
+        "code",
+        "vieux ransomware",
+        "cause",
+        "panne"
+      ],
+      "statut": "stale",
+      "confiance": 0.9,
+      "motifs": [
+        "ransomware"
+      ],
+      "source": "monitored",
+      "attendues": [
+        "nouvelle_relation_surveillee"
+      ]
+    }
+  ]
+}

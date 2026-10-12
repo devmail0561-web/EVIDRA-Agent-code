@@ -371,6 +371,19 @@
       "additionalProperties": false,
       "description": "Conditions du moniteur (phase 7 ; regex valid\u00e9es anti-ReDoS).",
       "properties": {
+        "alert_endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "egress optionnel des alertes (T7.2, hors ligne \u21d2 d\u00e9grad\u00e9)",
+          "title": "Alert Endpoint"
+        },
         "alert_on_new_relation_involving": {
           "items": {
             "type": "string"
@@ -378,14 +391,33 @@
           "title": "Alert On New Relation Involving",
           "type": "array"
         },
+        "dedup_fenetre_s": {
+          "default": 3600,
+          "description": "non r\u00e9\u00e9mission d'une alerte (T7.2)",
+          "minimum": 0,
+          "title": "Dedup Fenetre S",
+          "type": "integer"
+        },
+        "seuil_invalidation": {
+          "default": 0.8,
+          "description": "haute confiance invalid\u00e9e \u21d2 critique (T7.1)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Seuil Invalidation",
+          "type": "number"
+        },
         "watch_cycles": {
           "default": false,
           "title": "Watch Cycles",
           "type": "boolean"
         },
         "watch_gaps_in_chains": {
+          "description": "cha\u00eenes surveill\u00e9es (n\u0153uds, T7.3)",
           "items": {
-            "type": "string"
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "title": "Watch Gaps In Chains",
           "type": "array"

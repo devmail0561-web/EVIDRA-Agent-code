@@ -155,8 +155,19 @@ class Surveillance(_Base):
     """Conditions du moniteur (phase 7 ; regex validées anti-ReDoS)."""
 
     watch_cycles: bool = False
-    watch_gaps_in_chains: list[str] = Field(default_factory=list)
+    watch_gaps_in_chains: list[list[str]] = Field(
+        default_factory=list, description="chaînes surveillées (nœuds, T7.3)"
+    )
     alert_on_new_relation_involving: list[str] = Field(default_factory=list)
+    dedup_fenetre_s: int = Field(
+        default=3600, ge=0, description="non réémission d'une alerte (T7.2)"
+    )
+    alert_endpoint: str | None = Field(
+        default=None, description="egress optionnel des alertes (T7.2, hors ligne ⇒ dégradé)"
+    )
+    seuil_invalidation: float = Field(
+        default=0.80, ge=0.0, le=1.0, description="haute confiance invalidée ⇒ critique (T7.1)"
+    )
 
     @field_validator("alert_on_new_relation_involving")
     @classmethod

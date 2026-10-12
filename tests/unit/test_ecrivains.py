@@ -8,8 +8,9 @@ les autres écritures (`registry/*`, reçus) passent par `Magasin` depuis
 des appelants listés ici. Tout nouveau fichier écrivain fait échouer
 la garde (revue I3 explicite exigée).
 
-Maille : appels `.append(` sur `store`/`magasin`/`_magasin` (nom ou
-attribut) + `self.flux(..).append(..)` (choke WAL de `Magasin.append`).
+Maille : `.append(` sur `store`/`magasin`/`_magasin` (nom ou attribut),
+`self.flux(..).append(..)` (choke WAL), mutateurs `Registres` (écrivent
+par construction, liste `ECRITURES_REGISTRES`).
 """
 
 from __future__ import annotations
@@ -19,21 +20,41 @@ from pathlib import Path
 
 SRC = Path(__file__).resolve().parent.parent.parent / "src" / "evidra"
 
-# Fichiers autorisés à appeler `.append(` sur un Store/Magasin.
+# Fichiers autorisés à écrire (direct `.append` Store/Magasin ou via `Registres`).
 ECRIVAINS_AUTORISES = frozenset(
     {
         "tools/ingest.py",  # arêtes graphe (add_edge/confirm, via can())
         "memory/store.py",  # point de choke (Magasin.append → WAL)
-        "memory/registres.py",  # streams registry/* (sources/alias/modèles/tâches)
-        "boucle.py",  # reçu gouvernance (op receipt, sans effet d'état)
+        "memory/registres.py",  # streams registry/* (sources/alias/modèles/tâches/alertes)
+        "boucle.py",  # reçu gouvernance + transitions tâches (via Registres)
         "cli.py",  # reçu d'arrêt (op receipt, sans effet d'état)
         "arbitrage_cli.py",  # verdicts T6.4 (update_status/tombstone motivés)
+        "tools/alert.py",  # alertes T7.2 (lever/envoi, via Registres)
+        "boot/demarrage.py",  # expiration tâches au boot (via Registres)
+    }
+)
+
+# Mutateurs `Registres` (écrivent au WAL par construction).
+ECRITURES_REGISTRES = frozenset(
+    {
+        "noter_source",
+        "noter_compteurs",
+        "definir_alias",
+        "noter_modele",
+        "creer_tache",
+        "passer_etat",
+        "noter_conso",
+        "relever_expiration",
+        "noter_curseur",
+        "lever_alerte",
+        "noter_envoi",
+        "acquitter_alerte",
     }
 )
 
 
 def _ecrivains(chemin: Path) -> bool:
-    """Vrai si le fichier appelle `.append(` sur store/magasin/Magasin."""
+    """Vrai si le fichier écrit au WAL (Store direct ou via `Registres`)."""
     try:
         tree = ast.parse(chemin.read_text(encoding="utf-8"))
     except SyntaxError:
@@ -41,19 +62,20 @@ def _ecrivains(chemin: Path) -> bool:
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
             continue
-        if node.func.attr != "append":
-            continue
-        cible = node.func.value
-        if isinstance(cible, ast.Name) and cible.id in {"store", "magasin"}:
+        if node.func.attr == "append":
+            cible = node.func.value
+            if isinstance(cible, ast.Name) and cible.id in {"store", "magasin"}:
+                return True
+            if isinstance(cible, ast.Attribute) and cible.attr in {"store", "magasin", "_magasin"}:
+                return True
+            if (
+                isinstance(cible, ast.Call)
+                and isinstance(cible.func, ast.Attribute)
+                and cible.func.attr == "flux"
+            ):
+                return True  # `self.flux(..).append(..)` : choke WAL de Magasin
+        elif node.func.attr in ECRITURES_REGISTRES:
             return True
-        if isinstance(cible, ast.Attribute) and cible.attr in {"store", "magasin", "_magasin"}:
-            return True
-        if (
-            isinstance(cible, ast.Call)
-            and isinstance(cible.func, ast.Attribute)
-            and cible.func.attr == "flux"
-        ):
-            return True  # `self.flux(..).append(..)` : choke WAL de Magasin
     return False
 
 

@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from evidra.directive.loader import charger
-from evidra.kernel.contracts import Record
+from evidra.kernel.contracts import Record, Status
 from evidra.memory.arbitration import decider, score_produit
 from evidra.memory.envelope import Statut, resume
 from evidra.memory.lifecycle import fraicheur
@@ -233,6 +233,79 @@ def cmd_deduire(args: argparse.Namespace) -> int:
                     "domaine": args.domaine,
                     "proposees": len(deduites),
                     "consignees": consignees,
+                    "ignores_rebuild": ignores,
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 0
+    finally:
+        magasin.close()
+
+
+def cmd_lacunes(args: argparse.Namespace) -> int:
+    """Lacunes T7.3 : chaînes surveillées → gaps → questions → tâches P4 (verrou)."""
+    from datetime import UTC, datetime, timedelta
+
+    from evidra.kernel.contracts import Context
+    from evidra.memory.memoire import memoire_depuis_etat
+    from evidra.memory.registres import Registres
+    from evidra.monitor.lacunes import fiche_tache, planifier
+    from evidra.tools.query_gaps import OutilLacunes
+
+    directive = charger(Path(args.directive))
+    chaines = [list(c) for c in directive.monitoring.watch_gaps_in_chains if c]
+    try:
+        magasin = Magasin(Path(args.data_dir))
+    except StoreError as exc:
+        print(
+            json.dumps({"erreur": f"lacunes impossible : {exc}"}, ensure_ascii=False),
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        cle = f"domains/{args.domaine}"
+        try:
+            charge = magasin.recharger(cle)
+        except StoreError as exc:
+            print(json.dumps({"erreur": str(exc)}, ensure_ascii=False), file=sys.stderr)
+            return 1
+        memo, ignores = memoire_depuis_etat(args.domaine, charge.etat)
+        outil = OutilLacunes({args.domaine: memo})
+        ctx = Context(store=magasin, domain=args.domaine)
+        gaps_par_chaine: dict[str, list[str]] = {}
+        injoignables = []
+        for chaine in chaines:
+            recu = outil.run(ctx, {"chaine": chaine})
+            if recu.status is Status.OK:
+                gaps_par_chaine[">".join(str(x) for x in chaine)] = [
+                    str(g) for g in recu.payload.get("lacunes", []) if isinstance(g, str)
+                ]
+            else:
+                injoignables.append({"chaine": chaine, "motif": recu.payload.get("motif", "")})
+        questions = planifier(chaines, gaps_par_chaine)
+        registres = Registres(magasin)
+        deadline = args.deadline or (datetime.now(UTC) + timedelta(days=7)).isoformat()
+        crees = 0
+        for rang, question in enumerate(questions):
+            if not question.prioritaire:
+                continue
+            fiche = fiche_tache(question, budget=args.budget, deadline=deadline, rang=rang)
+            registres.creer_tache(
+                f"lacune-{rang}",
+                fiche["type"],
+                fiche["budget"],
+                fiche["deadline"],
+                extras={k: v for k, v in fiche.items() if k not in ("type", "budget", "deadline")},
+            )
+            crees += 1
+        print(
+            json.dumps(
+                {
+                    "domaine": args.domaine,
+                    "questions": len(questions),
+                    "taches_creees": crees,
+                    "injoignables": injoignables,
                     "ignores_rebuild": ignores,
                 },
                 ensure_ascii=False,

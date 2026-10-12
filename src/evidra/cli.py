@@ -90,6 +90,14 @@ def main(argv: list[str] | None = None) -> int:
     deduire.add_argument("--maintenant", required=False, default=None)
     deduire.set_defaults(fonction=_cmd_deduire)
 
+    lacunes = sous.add_parser("lacunes", help="gaps surveillés → questions → tâches P4 (verrou)")
+    lacunes.add_argument("--data-dir", required=True)
+    lacunes.add_argument("--domaine", required=True)
+    lacunes.add_argument("--directive", required=True)
+    lacunes.add_argument("--budget", type=float, default=10.0)
+    lacunes.add_argument("--deadline", required=False, default=None)
+    lacunes.set_defaults(fonction=_cmd_lacunes)
+
     args = parser.parse_args(argv)
     try:
         return int(args.fonction(args))
@@ -111,6 +119,12 @@ def _cmd_deduire(args: argparse.Namespace) -> int:
     from evidra.arbitrage_cli import cmd_deduire
 
     return cmd_deduire(args)
+
+
+def _cmd_lacunes(args: argparse.Namespace) -> int:
+    from evidra.arbitrage_cli import cmd_lacunes
+
+    return cmd_lacunes(args)
 
 
 def _moteur_essai_ou_rien(essai: bool):

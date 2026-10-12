@@ -26,10 +26,13 @@ from evidra.directive.loader import charger
 from evidra.directive.reload import Surveillant
 from evidra.directive.schema import Directive
 from evidra.engine_bridge.travailleur import lancer
+from evidra.kernel.contracts import Context
 from evidra.kernel.scheduler import Budgets, Scheduler
 from evidra.memory.memoire import Memoire, memoire_depuis_etat
 from evidra.memory.registres import Registres
+from evidra.memory.sources import SeuilsSources
 from evidra.memory.store import Magasin, StoreError
+from evidra.tools.alert import OutilAlert
 from evidra.tools.ingest import OutilIngest, Seuils
 from evidra.util import version_moteur
 
@@ -55,6 +58,7 @@ class RapportDemarrage:
     memoires: Mapping[str, Memoire]
     directive: Directive | None
     ingest: OutilIngest | None  # piloté par F1 (tâches/effet P4, à brancher)
+    alert: OutilAlert | None = None  # P1 câblée (effet + alerteur)
 
 
 def _horloge_defaut() -> str:
@@ -93,6 +97,68 @@ def _budgets(directive: Directive) -> Budgets:
         max_wal_bytes=b.max_wal_bytes,
         reserve_fond=b.reserve_fond,
     )
+
+
+def _construire_alerte(
+    directive: Directive,
+    data_dir: Path,
+    memoires: dict[str, Memoire],
+    registres: Registres,
+    tic: Callable[[], str],
+) -> OutilAlert:
+    """Outil P1 : conditions sur mémoires vivantes, JSONL local, egress best-effort."""
+    surv = directive.monitoring
+    prov = directive.seuils_provisoires
+    return OutilAlert(
+        memoires,
+        registres,
+        list(surv.alert_on_new_relation_involving),
+        surv.seuil_invalidation,
+        SeuilsSources(
+            poids_confirmation=prov.poids_confirmation,
+            n_min=prov.n_min_source,
+            seuil_confiance=prov.seuil_confiance_source,
+            plafond_contradiction=prov.plafond_contradiction,
+            seuil_suspect=prov.seuil_suspect,
+            plancher_surveillee=prov.plancher_surveillee,
+        ),
+        data_dir / "alerts.jsonl",
+        tic,
+        endpoint=surv.alert_endpoint,
+        fenetre_s=surv.dedup_fenetre_s,
+    )
+
+
+def _effet_alerte(alerte: OutilAlert, magasin: Magasin, domaine: str) -> Callable[[], Any]:
+    """Effet P1 : l'outil tourne avec un contexte lecture + verbe alert."""
+    ctx = Context(store=magasin, domain=domaine)
+    return lambda: alerte.run(ctx, {})
+
+
+def _fabrique_alerteur(registres: Registres, magasin: Magasin) -> Callable[[], tuple[str, ...]]:
+    """P1 : alertes actives non acquittées + `nouveautes` si le WAL a bougé.
+
+    Cache O(1) par tick (relecture du stream alertes seulement si écritures
+    depuis le dernier tick) : le no-op reste sans E/S lourde.
+    """
+    etat: dict[str, Any] = {"seq": -1, "actives": ()}
+
+    def alerter() -> tuple[str, ...]:
+        total = sum(magasin.derniers_seq().values())
+        if total == etat["seq"]:
+            return etat["actives"]
+        etat["seq"] = total
+        try:
+            actives = tuple(sorted(registres.alertes_actives()))
+        except Exception:  # noqa: BLE001 — lecture best-effort, P1 silencieuse sinon
+            return etat["actives"]
+        if actives:
+            etat["actives"] = actives
+            return actives
+        etat["actives"] = ("nouveautes",) if total > 0 else ()
+        return etat["actives"]
+
+    return alerter
 
 
 def demarrer(
@@ -143,14 +209,20 @@ def demarrer(
             tic,
             alias=_table_alias(directive),
         )
+        alerte = _construire_alerte(directive, data_dir, memoires, registres, tic)
+        effets: dict[str, Callable[[], Any]] = {}
+        if alerte is not None:
+            effets["alert"] = _effet_alerte(alerte, magasin, directive.domain)
+        effets.update(outils or {})
         boucle = Boucle(
             domaine=directive.domain,
             ordonnanceur=Scheduler(_budgets(directive)),
             magasin=magasin,
             registres=registres,
-            outils=dict(outils or {}),
+            outils=effets,
             surveillant=surveillant,
             horloge=tic,
+            alerteur=_fabrique_alerteur(registres, magasin),
         )
         phases["boucle"] = {
             "reprise_taches": len([t for t in registres.taches() if t.startswith("task:")])
@@ -168,6 +240,7 @@ def demarrer(
             memoires=memoires,
             directive=directive,
             ingest=outil,
+            alert=alerte,
         )
     except Exception:
         magasin.close()
