@@ -17,6 +17,7 @@ from typing import Any
 
 from evidra.kernel.contracts import Context, CostHint, Status, ToolResult, Verb
 from evidra.kernel.manifest import Permission
+from evidra.memory.ecarts import rapport_ecarts
 from evidra.memory.envelope import Statut
 from evidra.memory.memoire import Memoire
 from evidra.util import borner, garde
@@ -84,9 +85,13 @@ class OutilRapport:
             "stales": [],
             "invalidees": 0,
             "chaines": [],
+            "ecarts": {},
         }
         for domaine in domaines:
             memo = self._memoires[domaine]
+            sections["ecarts"][domaine] = rapport_ecarts(
+                memo.entites, n_confirmee=memo.seuil_confirmee
+            )
             for triplet in sorted(memo.entites):
                 env = memo.entites[triplet]
                 fiche = {
@@ -139,6 +144,13 @@ class OutilRapport:
                     f"  - {t[1]} {t[2]} {t[3]} (x{fiche['confirmations']},{fiche['confiance']:.2f})"
                 )
         lignes.append(f"Invalidées : {sections['invalidees']}.")
+        for domaine in sorted(sections["ecarts"]):
+            ecart = sections["ecarts"][domaine]
+            lignes.append(
+                f"Écarts {domaine} : {ecart['entites']} entités,"
+                f" p50={ecart['confirmations_p50']},"
+                f" sous-seuil={ecart['sous_seuil_confirmee']}."
+            )
         for chaine in sections["chaines"]:
             cov = chaine["couverture"]
             lignes.append(f"Chaîne {chaine['chaine']} : {cov[0]}/{cov[1]} couverts.")

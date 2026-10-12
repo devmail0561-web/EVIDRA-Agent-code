@@ -113,3 +113,33 @@ def test_redemarrage_meme_etat(tmp_path: Path) -> None:
     assert second.registres is not None
     assert second.registres.tache("k1")["etat"] == "pending"
     second.magasin.close()
+
+
+def test_demarrage_a_froid_trace(tmp_path: Path) -> None:
+    data, directive = _prep(tmp_path)
+    rapport = demarrer(data_dir=data, directive_path=directive)
+    try:
+        assert rapport.phases["domaines"]["demarrage_a_froid"] is True
+        assert rapport.phases["domaines"]["entites"] == 0
+    finally:
+        assert rapport.magasin is not None
+        rapport.magasin.close()
+
+
+def test_jour_zero_unconfirmed_normal(tmp_path: Path) -> None:
+    from evidra.kernel.contracts import Context
+    from evidra.memory.memoire import Memoire
+    from evidra.tools.validate import OutilValider
+
+    data, directive = _prep(tmp_path)
+    rapport = demarrer(data_dir=data, directive_path=directive)
+    try:
+        assert rapport.magasin is not None
+        ctx = Context(store=rapport.magasin, domain="code")
+        recu = OutilValider({"code": Memoire("code")}).run(
+            ctx, {"claim": {"source": "x", "relation": "cause", "cible": "y"}}
+        )
+        assert recu.payload["verdict"] == "UNCONFIRMED"  # jour 0 : normal, pas un échec
+    finally:
+        assert rapport.magasin is not None
+        rapport.magasin.close()

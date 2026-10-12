@@ -20,6 +20,7 @@ from collections.abc import Hashable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from evidra.directive.schema import n_confirmation_defaut
 from evidra.memory.cache import CacheResultats
 from evidra.memory.envelope import (
     CirCore,
@@ -33,6 +34,7 @@ from evidra.memory.envelope import (
     span_vers_dict,
 )
 from evidra.memory.index import Index
+from evidra.memory.lifecycle import promouvoir, transition
 
 Triplet = tuple[str, str, str, str]
 
@@ -55,8 +57,14 @@ class Issue:
 class Memoire:
     """État vivant d'un domaine : entités, observations vues, index."""
 
-    def __init__(self, domaine: str, seuils: tuple[float, float] | None = None) -> None:
+    def __init__(
+        self,
+        domaine: str,
+        seuils: tuple[float, float] | None = None,
+        n_confirmee: int | None = None,
+    ) -> None:
         self.domaine = domaine
+        self._n_confirmee = n_confirmee if n_confirmee is not None else n_confirmation_defaut()
         self.entites: dict[Triplet, Envelope] = {}
         self.vues: set[str] = set()
         self.index = Index(seuils)
@@ -65,6 +73,11 @@ class Memoire:
             tuple[str, str, str], list[Triplet]
         ] = {}  # (domaine, src, dst) → triplets (verdicts O(1), T5.3)
         self.cache = CacheResultats()  # requêtes répétées O(1), invalidé par topologie (T5.6)
+
+    @property
+    def seuil_confirmee(self) -> int:
+        """Seuil CONFIRMÉE (directive, lecture seule — T6.7 ne le modifie jamais)."""
+        return self._n_confirmee
 
     def observer(
         self,
@@ -95,6 +108,7 @@ class Memoire:
         if triplet in self.entites:
             entite = self.entites[triplet]
             confirmer(entite, candidat, horodatage=horodatage)  # extraction seule : accepté (I6)
+            promouvoir(entite, n_confirmee=self._n_confirmee)  # T6.1 : statut suit le compte
             self.vues.add(observation)
             return Issue("confirmation", entite, triplet, observation)
         entite = Envelope(
@@ -105,6 +119,7 @@ class Memoire:
             source_reliability=fiabilite,
             ingest_channel=channel,
             derivation=Derivation.EXTRAITE,
+            etiquettes_brutes=(noyau.source, noyau.target),
         )
         self.ajouter(triplet, observation, entite)
         return Issue("nouvelle", entite, triplet, observation)
@@ -143,6 +158,46 @@ class Memoire:
         cir = enveloppe.cir
         self.cache.invalider(normaliser_label(cir.source), normaliser_label(cir.target))
         return True
+
+    def changer_statut(self, triplet: Triplet, cible: Statut, *, motif: str) -> tuple[bool, str]:
+        """Transition de cycle de vie (T6.1) : mute l'état, l'écriture WAL
+        (`update_status`, capsule complète) relève de l'appelant."""
+        enveloppe = self.entites.get(triplet)
+        if enveloppe is None:
+            return False, f"triplet inconnu : {triplet[1:]}"
+        return transition(enveloppe, cible, motif=motif)
+
+    def candidats_alias(
+        self, table: Mapping[tuple[str, str], str] | None = None
+    ) -> list[dict[str, Any]]:
+        """Paires co-confirmées ≥ N (T6.5) : même (relation, cible), sources
+        distinctes, `min(confirmations) ≥ N`. Ni graphe ni index touchés ;
+        la promotion est humaine (directive), jamais automatique."""
+        connus = table if table is not None else {}
+        groupes: dict[tuple[str, str, str], dict[str, int]] = {}
+        for (domaine, src, relation, dst), env in self.entites.items():
+            groupes.setdefault((domaine, relation, dst), {})[src] = env.confirmation_count
+        candidats = []
+        for (domaine, relation, dst), labels in sorted(groupes.items()):
+            noms = sorted(labels)
+            for i, a in enumerate(noms):
+                for b in noms[i + 1 :]:
+                    if min(labels[a], labels[b]) < self._n_confirmee:
+                        continue
+                    ca, cb = connus.get((domaine, a)), connus.get((domaine, b))
+                    if ca is not None and ca == cb:
+                        continue  # déjà promus vers le même canonique
+                    candidats.append(
+                        {
+                            "domaine": domaine,
+                            "a": a,
+                            "b": b,
+                            "relation": relation,
+                            "cible": dst,
+                            "co_confirmations": min(labels[a], labels[b]),
+                        }
+                    )
+        return candidats
 
     def rechercher(
         self, sens: str, concept: str, *, epoque: Hashable = 0
@@ -236,7 +291,7 @@ def appliquer_domaine(etat: dict[str, Any], enr: Any) -> None:
             raise ValueError(f"triplet illisible : {brut!r}")
         return (brut[0], brut[1], brut[2], brut[3])
 
-    if enr.op in ("add_edge", "confirm"):
+    if enr.op in ("add_edge", "confirm", "update_status"):
         triplet = _triplet(enr.donnees)
         etat[id_triplet(triplet)] = dict(enr.donnees)
     elif enr.op == "tombstone":
@@ -245,8 +300,11 @@ def appliquer_domaine(etat: dict[str, Any], enr: Any) -> None:
 
 
 def memoire_depuis_etat(
-    domaine: str, etat: Mapping[str, Any], seuils: tuple[float, float] | None = None
+    domaine: str,
+    etat: Mapping[str, Any],
+    seuils: tuple[float, float] | None = None,
+    n_confirmee: int | None = None,
 ) -> tuple[Memoire, int]:
     """Rebuild : `(mémoire, ignorés)` — tolérant par capsule (I12)."""
-    memoire = Memoire(domaine, seuils)
+    memoire = Memoire(domaine, seuils, n_confirmee)
     return memoire, memoire.reconstruire(etat)

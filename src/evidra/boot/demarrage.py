@@ -67,6 +67,23 @@ def _seuils_outil(directive: Directive) -> Seuils:
     return Seuils(min_confiance=directive.quality.min_confidence, methodes=frozenset(methodes))
 
 
+def _table_alias(directive: Directive) -> dict[tuple[str, str], str]:
+    """Table d'alias T6.5 : `(domaine, variante normalisée) → canonique normalisé`."""
+    from evidra.memory.envelope import normaliser_label
+
+    table: dict[tuple[str, str], str] = {}
+    for domaine, entrees in directive.aliases.items():
+        if not isinstance(entrees, dict):
+            continue
+        for canonique, variantes in entrees.items():
+            if not isinstance(variantes, list):
+                continue
+            for variante in variantes:
+                if isinstance(variante, str) and variante.strip():
+                    table[(domaine, normaliser_label(variante))] = normaliser_label(canonique)
+    return table
+
+
 def _budgets(directive: Directive) -> Budgets:
     b = directive.budgets
     return Budgets(
@@ -112,12 +129,19 @@ def demarrer(
         phases["registres"] = _phase_registres(registres, tic)
         phases["moteur"] = _phase_moteur(moteur, registres, prechauffer, motifs)
         memoires = _memoires_domaines(magasin, directive)
+        total_entites = sum(len(m.entites) for m in memoires.values())
         phases["domaines"] = {
             "domaines": sorted(memoires),
-            "entites": sum(len(m.entites) for m in memoires.values()),
+            "entites": total_entites,
+            # T6.8 : démarrage à froid = graphe vide ; UNCONFIRMED au jour 0 est normal.
+            "demarrage_a_froid": total_entites == 0,
         }
         outil = OutilIngest(
-            memoires, directive.permissions.en_politique(), _seuils_outil(directive), tic
+            memoires,
+            directive.permissions.en_politique(),
+            _seuils_outil(directive),
+            tic,
+            alias=_table_alias(directive),
         )
         boucle = Boucle(
             domaine=directive.domain,
@@ -218,6 +242,7 @@ def _memoires_domaines(magasin: Magasin, directive: Directive) -> dict[str, Memo
     if directive.domain not in noms:
         noms.append(directive.domain)
     seuils = (directive.quality.seuils_tiers[0], directive.quality.seuils_tiers[1])
+    n_confirmee = directive.seuils_provisoires.n_confirmation
     memoires: dict[str, Memoire] = {}
     for nom in noms:
         cle = f"domains/{nom}"
@@ -226,9 +251,9 @@ def _memoires_domaines(magasin: Magasin, directive: Directive) -> dict[str, Memo
         except StoreError:
             charge = None
         if charge is None:
-            memoires[nom] = Memoire(nom, seuils)
+            memoires[nom] = Memoire(nom, seuils, n_confirmee)
         else:
-            memoire, _ignores = memoire_depuis_etat(nom, charge.etat, seuils)
+            memoire, _ignores = memoire_depuis_etat(nom, charge.etat, seuils, n_confirmee)
             memoires[nom] = memoire
     return memoires
 

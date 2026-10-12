@@ -4,8 +4,8 @@
 
 `--data-dir` toujours requis (ADR-0011, pas de défaut implicite).
 `--essai` = moteur d'essai NON CALIBRÉ (B1), opt-in explicite dev/dogfood ;
-sans moteur, `ingest` refuse net (exit 2). `query`/`compact`/`status`
-fonctionnent sans moteur ; `status` ne verrouille jamais (lecture seule).
+sans moteur, `ingest` refuse net (exit 2). `query`/`compact`/`status`/
+`maintenance` fonctionnent sans moteur ; lecture seule sans verrou.
 """
 
 from __future__ import annotations
@@ -59,6 +59,37 @@ def main(argv: list[str] | None = None) -> int:
     status.add_argument("--data-dir", required=True)
     status.set_defaults(fonction=cmd_status)
 
+    maintenance = sous.add_parser(
+        "maintenance", help="candidats STALE + confiance effective (lecture seule)"
+    )
+    maintenance.add_argument("--data-dir", required=True)
+    maintenance.add_argument("--domaine", required=True)
+    maintenance.add_argument("--directive", required=False, default=None)
+    maintenance.add_argument("--maintenant", required=False, default=None)
+    maintenance.set_defaults(fonction=cmd_maintenance)
+
+    arbitrer = sous.add_parser(
+        "arbitrer", help="arbitre les paires en conflit (écriture verrouillée)"
+    )
+    arbitrer.add_argument("--data-dir", required=True)
+    arbitrer.add_argument("--domaine", required=True)
+    arbitrer.add_argument("--directive", required=True)
+    arbitrer.add_argument("--maintenant", required=False, default=None)
+    arbitrer.set_defaults(fonction=_cmd_arbitrer)
+
+    aliases = sous.add_parser("aliases", help="table + candidats co-confirmés (lecture seule)")
+    aliases.add_argument("--data-dir", required=True)
+    aliases.add_argument("--domaine", required=True)
+    aliases.add_argument("--directive", required=False, default=None)
+    aliases.set_defaults(fonction=cmd_aliases)
+
+    deduire = sous.add_parser("deduire", help="déduction tracée (gate directive, verrouillée)")
+    deduire.add_argument("--data-dir", required=True)
+    deduire.add_argument("--domaine", required=True)
+    deduire.add_argument("--directive", required=True)
+    deduire.add_argument("--maintenant", required=False, default=None)
+    deduire.set_defaults(fonction=_cmd_deduire)
+
     args = parser.parse_args(argv)
     try:
         return int(args.fonction(args))
@@ -68,6 +99,18 @@ def main(argv: list[str] | None = None) -> int:
         _LOG.exception("échec commande %s", getattr(args, "commande", "?"))
         print(json.dumps({"erreur": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 1
+
+
+def _cmd_arbitrer(args: argparse.Namespace) -> int:
+    from evidra.arbitrage_cli import cmd_arbitrer
+
+    return cmd_arbitrer(args)
+
+
+def _cmd_deduire(args: argparse.Namespace) -> int:
+    from evidra.arbitrage_cli import cmd_deduire
+
+    return cmd_deduire(args)
 
 
 def _moteur_essai_ou_rien(essai: bool):
@@ -287,6 +330,79 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "streams": streams,
                 "invalides": sorted(invalides),
                 "avertissements": avertissements,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
+def cmd_maintenance(args: argparse.Namespace) -> int:
+    """Candidats maintenance P5 : STALE + confiance effective (T6.2, lecture seule)."""
+    from datetime import UTC, datetime
+
+    from evidra.directive.loader import charger
+    from evidra.directive.schema import Provisoire, Staleness
+    from evidra.memory.lifecycle import recenser_stales
+    from evidra.memory.store import StoreError, lire_domaine
+
+    try:
+        memo, ignores = lire_domaine(Path(args.data_dir), args.domaine)
+    except StoreError as exc:
+        print(json.dumps({"erreur": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 1
+    if args.directive:
+        directive = charger(Path(args.directive))
+        stale_apres = directive.staleness.stale_after_days
+        t_domaine = directive.seuils_provisoires.t_domaine
+    else:
+        stale_apres = Staleness().stale_after_days
+        t_domaine = Provisoire().t_domaine
+    maintenant = args.maintenant or datetime.now(UTC).isoformat()
+    fiches = recenser_stales(
+        memo.entites,
+        maintenant_iso=maintenant,
+        stale_after_days=stale_apres,
+        t_domaine_jours=t_domaine,
+    )
+    print(
+        json.dumps(
+            {
+                "domaine": args.domaine,
+                "maintenant": maintenant,
+                "candidats": fiches,
+                "ignores_rebuild": ignores,
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
+def cmd_aliases(args: argparse.Namespace) -> int:
+    """Alias T6.5 : table promue (directive, humaine) + candidats mûrs (lecture seule)."""
+    from evidra.boot.demarrage import _table_alias
+    from evidra.directive.loader import charger
+    from evidra.memory.store import StoreError, lire_domaine
+
+    try:
+        memo, ignores = lire_domaine(Path(args.data_dir), args.domaine)
+    except StoreError as exc:
+        print(json.dumps({"erreur": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 1
+    table: dict = {}
+    if args.directive:
+        table = _table_alias(charger(Path(args.directive)))
+    promus = sorted(
+        {"variante": v, "canonique": c} for (d, v), c in table.items() if d == args.domaine
+    )
+    print(
+        json.dumps(
+            {
+                "domaine": args.domaine,
+                "promus": promus,
+                "candidats": memo.candidats_alias(table),
+                "ignores_rebuild": ignores,
             },
             ensure_ascii=False,
         )

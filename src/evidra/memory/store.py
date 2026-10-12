@@ -74,14 +74,17 @@ def reperer_invalides(racine: Path) -> list[str]:
 
 
 def lire_domaine(
-    racine: Path, domaine: str, seuils: tuple[float, float] | None = None
+    racine: Path,
+    domaine: str,
+    seuils: tuple[float, float] | None = None,
+    n_confirmee: int | None = None,
 ) -> tuple[Memoire, int]:
     """Lecture seule d'un domaine, sans verrou (CLI `query`).
 
     Même pipeline que `Magasin.recharger` (snapshot + rejeu WAL +
     `memoire_depuis_etat`), sans prendre `sa.lock` : utilisable pendant
-    que l'agent tourne. `seuils` = tiers directive (`None` ⇒ défaut
-    canonique du schéma). Lève `StoreError` si le domaine est inconnu.
+    que l'agent tourne. `seuils`/`n_confirmee` = directive (`None` ⇒
+    défauts canoniques du schéma). Lève `StoreError` si le domaine est inconnu.
     """
     dossier = racine / "domains" / domaine
     if not dossier.is_dir():
@@ -89,7 +92,7 @@ def lire_domaine(
     cle = f"domains/{domaine}"
     with WAL(dossier / "wal.jsonl", verrouiller=False) as journal:
         charge = charger(dossier, journal, appliquer=appliquer_domaine, stream=cle)
-    return memoire_depuis_etat(domaine, charge.etat, seuils)
+    return memoire_depuis_etat(domaine, charge.etat, seuils, n_confirmee)
 
 
 class StoreError(Exception):

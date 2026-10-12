@@ -26,6 +26,8 @@ from evidra.kernel.gate import Policy, can, refuse
 from evidra.kernel.manifest import Permission
 from evidra.memory.envelope import CirCore, resume
 from evidra.memory.memoire import Memoire
+from evidra.memory.registres import FLUX_SOURCES
+from evidra.memory.sources import Compteurs
 from evidra.util import garde
 
 FLUX_DOMAINE = "domains/{}"
@@ -107,6 +109,7 @@ class OutilIngest:
         ajoutees = confirmees = idempotentes = 0
         dropped: dict[str, int] = {}
         trace: int | None = None
+        contributions: dict[str, dict[str, int]] = {}
         for noyau in noyaux:
             if not isinstance(noyau, CirCore):
                 dropped["forme-invalide"] = dropped.get("forme-invalide", 0) + 1
@@ -149,6 +152,11 @@ class OutilIngest:
                 ajoutees += 1
             else:
                 confirmees += 1
+            compteur = contributions.setdefault(noyau.provenance.ref, {"c": 0, "k": 0})
+            compteur["c"] += 1
+            if issue.sorte == "confirmation":
+                compteur["k"] += 1
+        self._reporter_contributions(ctx, contributions)
         payload: dict[str, Any] = {
             "ajoutees": ajoutees,
             "confirmees": confirmees,
@@ -165,3 +173,33 @@ class OutilIngest:
                 trace_ref=trace,
             )
         return ToolResult(status=Status.OK, payload=payload, trace_ref=trace)
+
+    @staticmethod
+    def _reporter_contributions(ctx: Context, contributions: dict[str, dict[str, int]]) -> None:
+        """Alimente `registry/sources` (T6.3) : lecture-modification-écriture.
+
+        Une observation distincte ≈ évidence indépendante (clé §6.3 inclut
+        `ref`) : `confirmation` ⇒ `confirmees_indep + 1`. Échec silencieux
+        compté en `warnings` par l'appelant ? Non : best-effort tracé au log.
+        """
+        for ref, delta in contributions.items():
+            try:
+                trouve = ctx.store.lookup(FLUX_SOURCES, ref)
+                brut = trouve.data.get("compteurs") if trouve is not None else None
+                compteurs = Compteurs.depuis_dict(brut)
+                fusionnes = Compteurs(
+                    contribuees=compteurs.contribuees + delta["c"],
+                    confirmees_indep=compteurs.confirmees_indep + delta["k"],
+                    contredites_sup=compteurs.contredites_sup,
+                )
+                ctx.store.append(
+                    FLUX_SOURCES,
+                    Record(
+                        stream=FLUX_SOURCES,
+                        op="contrib",
+                        key=ref,
+                        data={"compteurs": fusionnes.en_dict()},
+                    ),
+                )
+            except Exception:  # noqa: BLE001 — best-effort, l'ingestion a réussi
+                _LOG.exception("compteurs source non reportés : %s", ref)

@@ -110,6 +110,7 @@ class Envelope:
     derivation: Derivation = Derivation.EXTRAITE
     quarantine: str | None = None  # motif, None = hors quarantaine
     justifications: tuple[str, ...] = ()
+    etiquettes_brutes: tuple[str, str] | None = None  # labels source avant alias (T6.5)
 
     @property
     def cir(self) -> CirCore:
@@ -252,6 +253,9 @@ def resume(enveloppe: Envelope) -> Mapping[str, Any]:
         "derivation": enveloppe.derivation.value,
         "quarantine": enveloppe.quarantine,
         "justifications": list(enveloppe.justifications),
+        "etiquettes_brutes": list(enveloppe.etiquettes_brutes)
+        if enveloppe.etiquettes_brutes is not None
+        else None,
     }
 
 
@@ -270,6 +274,7 @@ def enveloppe_depuis_resume(d: Mapping[str, Any]) -> Envelope:
     publie = prov.get("published_at")
     quarantaine = d.get("quarantine")
     justifs = d.get("justifications", [])
+    brutes = d.get("etiquettes_brutes")
     noyau = CirCore(
         source=str(cir["source"]),
         target=str(cir["target"]),
@@ -299,4 +304,7 @@ def enveloppe_depuis_resume(d: Mapping[str, Any]) -> Envelope:
         justifications=tuple(justifs)
         if isinstance(justifs, list) and all(isinstance(j, str) for j in justifs)
         else (),
+        etiquettes_brutes=(str(brutes[0]), str(brutes[1]))
+        if isinstance(brutes, list) and len(brutes) == 2
+        else None,
     )

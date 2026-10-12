@@ -82,6 +82,30 @@ class Provisoire(_Base):
     seuil_revision: float = Field(
         default=3.0, gt=1.0, description="[provisoire] ratio ≤ seuil ⇒ EN RÉVISION (amendement)"
     )
+    n_confirmation: int = Field(
+        default=3, ge=2, description="[provisoire] confirmations ⇒ CONFIRMÉE (T6.1)"
+    )
+    poids_confirmation: float = Field(
+        default=0.7, ge=0.0, le=1.0, description="[provisoire] fiabilité source (T6.3)"
+    )
+    n_min_source: int = Field(
+        default=5, ge=1, description="[provisoire] plancher effectif fiabilité (T6.3)"
+    )
+    seuil_confiance_source: float = Field(
+        default=0.80,
+        ge=0.0,
+        le=1.0,
+        description="[provisoire] trusted si ≥ et contradiction ≤ plafond",
+    )
+    plafond_contradiction: float = Field(
+        default=0.05, ge=0.0, le=1.0, description="[provisoire] trusted si contradiction ≤ (T6.3)"
+    )
+    seuil_suspect: float = Field(
+        default=0.10, ge=0.0, le=1.0, description="[provisoire] contradiction > ⇒ suspect (T6.3)"
+    )
+    plancher_surveillee: float = Field(
+        default=0.60, ge=0.0, le=1.0, description="[provisoire] monitored dès (T6.3)"
+    )
 
     @model_validator(mode="after")
     def _coherent(self) -> Provisoire:
@@ -120,6 +144,11 @@ def seuils_tiers_defaut() -> tuple[float, float]:
     """Défaut canonique des tiers (source unique : `Qualite.seuils_tiers`, I9)."""
     defaut = Qualite.model_fields["seuils_tiers"].default
     return (float(defaut[0]), float(defaut[1]))
+
+
+def n_confirmation_defaut() -> int:
+    """Défaut canonique des confirmations (source unique : `Provisoire`, I9)."""
+    return int(Provisoire.model_fields["n_confirmation"].default)
 
 
 class Surveillance(_Base):
@@ -188,6 +217,9 @@ class Directive(_Base):
     seuils_provisoires: Provisoire = Field(default_factory=Provisoire)
     delegate: Literal["disabled"] = Field(
         default="disabled", description="gate P3 : toute autre valeur refusée avant T10.7"
+    )
+    deduction: Literal["disabled", "enabled"] = Field(
+        default="disabled", description="gate T6.6 : déduction tracée interdite par défaut"
     )
     semantic_index_min_edges: int = Field(default=500000, gt=0)
     trusted_agents: list[AgentPair] = Field(default_factory=list)

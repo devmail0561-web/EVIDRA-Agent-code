@@ -132,3 +132,24 @@ def test_etat_cycle() -> None:
         )
         assert boucle.etat_cycle() == {"phase": "attente", "outil_en_cours": None, "tick": 0}
         assert etat.cycle(boucle)["tick"] == 0
+
+
+def test_rapport_ecarts_t67() -> None:
+    from evidra.memory.ecarts import rapport_ecarts
+
+    memo = _memoire()
+    ecarts = rapport_ecarts(memo.entites, n_confirmee=memo.seuil_confirmee)
+    assert ecarts["entites"] == 2
+    assert ecarts["jamais_confirmees"] == 2
+    assert ecarts["sous_seuil_confirmee"] == 2
+    assert ecarts["tranches"] == {"1": 2, "2": 0, "3-5": 0, "6+": 0}
+    with tempfile.TemporaryDirectory() as tmp, Magasin(Path(tmp)) as magasin:
+        ctx = Context(store=magasin, domain="code")
+        recu = OutilRapport({"code": memo}).run(ctx, {"scope": "code", "format": "json"})
+    assert recu.payload["sections"]["ecarts"]["code"]["entites"] == 2
+    assert (
+        "Écarts code"
+        in OutilRapport({"code": memo})
+        .run(ctx, {"scope": "code", "format": "texte"})
+        .payload["texte"]
+    )

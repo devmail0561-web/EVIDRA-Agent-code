@@ -9,7 +9,7 @@ des appelants listés ici. Tout nouveau fichier écrivain fait échouer
 la garde (revue I3 explicite exigée).
 
 Maille : appels `.append(` sur `store`/`magasin`/`_magasin` (nom ou
-attribut) + `x(..).append(..)` (choke WAL de `Magasin.append`).
+attribut) + `self.flux(..).append(..)` (choke WAL de `Magasin.append`).
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ ECRIVAINS_AUTORISES = frozenset(
         "memory/registres.py",  # streams registry/* (sources/alias/modèles/tâches)
         "boucle.py",  # reçu gouvernance (op receipt, sans effet d'état)
         "cli.py",  # reçu d'arrêt (op receipt, sans effet d'état)
+        "arbitrage_cli.py",  # verdicts T6.4 (update_status/tombstone motivés)
     }
 )
 
@@ -47,7 +48,11 @@ def _ecrivains(chemin: Path) -> bool:
             return True
         if isinstance(cible, ast.Attribute) and cible.attr in {"store", "magasin", "_magasin"}:
             return True
-        if isinstance(cible, ast.Call):
+        if (
+            isinstance(cible, ast.Call)
+            and isinstance(cible.func, ast.Attribute)
+            and cible.func.attr == "flux"
+        ):
             return True  # `self.flux(..).append(..)` : choke WAL de Magasin
     return False
 

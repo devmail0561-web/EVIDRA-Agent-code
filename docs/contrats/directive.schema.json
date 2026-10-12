@@ -162,6 +162,20 @@
       "additionalProperties": false,
       "description": "Constantes d'arbitrage \u2014 TOUTES `[provisoire]` (I9), calibration T10.3.",
       "properties": {
+        "n_confirmation": {
+          "default": 3,
+          "description": "[provisoire] confirmations \u21d2 CONFIRM\u00c9E (T6.1)",
+          "minimum": 2,
+          "title": "N Confirmation",
+          "type": "integer"
+        },
+        "n_min_source": {
+          "default": 5,
+          "description": "[provisoire] plancher effectif fiabilit\u00e9 (T6.3)",
+          "minimum": 1,
+          "title": "N Min Source",
+          "type": "integer"
+        },
         "nmax": {
           "anyOf": [
             {
@@ -175,6 +189,38 @@
           "description": "[provisoire] saturation Nmax (norm_conf)",
           "title": "Nmax"
         },
+        "plafond_contradiction": {
+          "default": 0.05,
+          "description": "[provisoire] trusted si contradiction \u2264 (T6.3)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Plafond Contradiction",
+          "type": "number"
+        },
+        "plancher_surveillee": {
+          "default": 0.6,
+          "description": "[provisoire] monitored d\u00e8s (T6.3)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Plancher Surveillee",
+          "type": "number"
+        },
+        "poids_confirmation": {
+          "default": 0.7,
+          "description": "[provisoire] fiabilit\u00e9 source (T6.3)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Poids Confirmation",
+          "type": "number"
+        },
+        "seuil_confiance_source": {
+          "default": 0.8,
+          "description": "[provisoire] trusted si \u2265 et contradiction \u2264 plafond",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Seuil Confiance Source",
+          "type": "number"
+        },
         "seuil_quorum": {
           "default": 2.0,
           "description": "[provisoire] ratio > seuil \u21d2 l'ar\u00eate l'emporte",
@@ -187,6 +233,14 @@
           "description": "[provisoire] ratio \u2264 seuil \u21d2 EN R\u00c9VISION (amendement)",
           "exclusiveMinimum": 1.0,
           "title": "Seuil Revision",
+          "type": "number"
+        },
+        "seuil_suspect": {
+          "default": 0.1,
+          "description": "[provisoire] contradiction > \u21d2 suspect (T6.3)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Seuil Suspect",
           "type": "number"
         },
         "t_domaine": {
@@ -388,6 +442,16 @@
       "description": "[provisoire] plafonds par canal, confiances non calibr\u00e9es (B1)",
       "title": "Channel Ceilings",
       "type": "object"
+    },
+    "deduction": {
+      "default": "disabled",
+      "description": "gate T6.6 : d\u00e9duction trac\u00e9e interdite par d\u00e9faut",
+      "enum": [
+        "disabled",
+        "enabled"
+      ],
+      "title": "Deduction",
+      "type": "string"
     },
     "delegate": {
       "const": "disabled",

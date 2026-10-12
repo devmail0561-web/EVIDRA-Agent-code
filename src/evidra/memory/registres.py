@@ -60,6 +60,18 @@ class Registres:
             FLUX_SOURCES, Record(stream=FLUX_SOURCES, op="put", key=uri, data=dict(champs))
         )
 
+    def noter_compteurs(self, uri: str, compteurs: Mapping[str, Any]) -> int:
+        """Compteurs calculés d'une source (T6.3, jamais à la main)."""
+        return self.noter_source(uri, {"compteurs": dict(compteurs)})
+
+    def compteurs(self, uri: str) -> dict[str, Any]:
+        """Compteurs stockés d'une source, `{}` si inconnue (T6.3)."""
+        fiche = self.source(uri)
+        if not isinstance(fiche, dict):
+            return {}
+        compteurs = fiche.get("compteurs")
+        return dict(compteurs) if isinstance(compteurs, dict) else {}
+
     def source(self, uri: str) -> dict[str, Any] | None:
         """Fiche source, `None` si inconnue."""
         trouve = self._magasin.lookup(FLUX_SOURCES, uri)

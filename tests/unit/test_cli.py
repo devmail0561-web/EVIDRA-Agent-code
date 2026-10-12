@@ -82,6 +82,95 @@ def test_status_manifeste_corrompu_tolerant(tmp_path: Path, capsys) -> None:
     assert any("manifeste" in a for a in rapport["avertissements"])
 
 
+def test_maintenance_liste_stale(tmp_path: Path, capsys) -> None:
+    data = tmp_path / "data"
+    directive = tmp_path / "directive.json"
+    directive.write_text(json.dumps(_directive()), encoding="utf-8")
+    rapport = demarrer(data_dir=data, directive_path=directive)
+    assert rapport.ingest is not None and rapport.magasin is not None
+    ctx = Context(store=rapport.magasin, domain="code")
+    rapport.ingest.run(ctx, {"noyaux": [_noyau("doc://a")], "channel": "test"})
+    rapport.ingest.run(ctx, {"noyaux": [_noyau("doc://b")], "channel": "test"})
+    rapport.magasin.close()
+    assert (
+        main(
+            [
+                "maintenance",
+                "--data-dir",
+                str(data),
+                "--domaine",
+                "code",
+                "--maintenant",
+                "2030-01-01T00:00:00+00:00",
+            ]
+        )
+        == 0
+    )
+    sorties = json.loads(capsys.readouterr().out)
+    assert len(sorties["candidats"]) == 1
+    assert sorties["candidats"][0]["statut"] == "active"
+
+
+def test_arbitrer_gagnant_tombstone_perdant(tmp_path: Path, capsys) -> None:
+    from evidra.memory.envelope import CirCore, Provenance
+
+    data = tmp_path / "data"
+    directive = tmp_path / "directive.json"
+    directive.write_text(
+        json.dumps(
+            {
+                "agent_id": "t",
+                "domain": "code",
+                "permissions": {"allowed": [{"tool": "ingest", "verb": "ingest", "scope": "*"}]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    rapport = demarrer(data_dir=data, directive_path=directive)
+    assert rapport.ingest is not None and rapport.magasin is not None
+    ctx = Context(store=rapport.magasin, domain="code")
+
+    def noyau(ref: str, relation: str) -> CirCore:
+        return CirCore(
+            source="Surchauffe",
+            target="panne",
+            relation=relation,
+            confidence=0.9,
+            provenance=Provenance(
+                ref=ref,
+                span="synthetic",
+                extraction_method="symbolic_rust",
+                model_version="v",
+                extracted_at="t",
+            ),
+        )
+
+    rapport.ingest.run(
+        ctx, {"noyaux": [noyau("doc://a1", "cause"), noyau("doc://a2", "cause")], "channel": "t"}
+    )
+    rapport.ingest.run(
+        ctx, {"noyaux": [noyau(f"doc://b{i}", "prevent") for i in range(30)], "channel": "t"}
+    )
+    rapport.magasin.close()
+    argv = ["arbitrer", "--data-dir", str(data), "--domaine", "code", "--directive", str(directive)]
+    assert main(argv) == 0
+    sorties = json.loads(capsys.readouterr().out)
+    assert len(sorties["decisions"]) == 1
+    decision = sorties["decisions"][0]
+    # "A" = meilleur score positionnel : ici l'arête prevent (30 confirmations).
+    assert decision["verdict"] == "A"
+    assert decision["paire"][0] == ["code", "surchauffe", "prevent", "panne"]
+    assert decision["ratio"] > 3.0
+    # Tombstone rejoué : le perdant a disparu, le gagnant est MAINTENUE.
+    assert (
+        main(["query", "effects", "surchauffe", "--data-dir", str(data), "--domaine", "code"]) == 0
+    )
+    effets = json.loads(capsys.readouterr().out)["reponses"]
+    triplets = [tuple(r["triplet"]) for r in effets]
+    assert ("code", "surchauffe", "prevent", "panne") in triplets
+    assert ("code", "surchauffe", "cause", "panne") not in triplets
+
+
 def test_query_inconnu(tmp_path: Path) -> None:
     assert main(["query", "causes", "x", "--data-dir", str(tmp_path), "--domaine", "code"]) == 1
 
