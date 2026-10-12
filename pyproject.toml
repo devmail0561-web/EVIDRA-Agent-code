@@ -34,6 +34,7 @@ ingest = "evidra.tools.ingest:OutilIngest"
 [project.entry-points."evidra_adapters"]
 # un entry-point par adaptateur — ex :
 # local_files = "evidra.adapters.local_files:LocalFilesAdapter"
+local_files = "evidra.adapters.local_files:AdaptateurFichiers"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/evidra"]

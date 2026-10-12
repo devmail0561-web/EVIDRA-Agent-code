@@ -74,8 +74,8 @@ def _exige_str(data: Mapping[str, Any], champ: str, *, non_vide: bool = True) ->
 
 def _permissions(data: Mapping[str, Any]) -> frozenset[Permission]:
     brutes = data.get("permissions")
-    if not isinstance(brutes, (list, tuple)) or not brutes:
-        raise _ko("'permissions' : liste non vide exigée")
+    if not isinstance(brutes, (list, tuple)):
+        raise _ko("'permissions' : liste exigée (vide = aucun besoin déclaré)")
     permissions: set[Permission] = set()
     for i, brute in enumerate(brutes):
         if not isinstance(brute, Mapping):
