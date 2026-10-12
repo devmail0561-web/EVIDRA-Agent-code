@@ -6,7 +6,7 @@ on:
 
 jobs:
   bench:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout SA
         uses: actions/checkout@v4

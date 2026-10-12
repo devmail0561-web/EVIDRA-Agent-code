@@ -6,10 +6,7 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"]
+    runs-on: self-hosted
     steps:
       - name: Checkout SA
         uses: actions/checkout@v4
