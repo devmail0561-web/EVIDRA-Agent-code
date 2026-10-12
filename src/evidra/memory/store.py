@@ -154,6 +154,23 @@ class Magasin:
         """Compteur d'accès au stream (preuve d'isolation)."""
         return self._acces.get(cle, 0)
 
+    def synchroniser(self) -> None:
+        """Flush + fsync des streams ouverts, sans fermer (point de reprise)."""
+        for journal in self._journaux.values():
+            journal.sync()
+
+    def inventorier(self) -> list[str]:
+        """Clés des streams présents sur disque (valides uniquement)."""
+        cles = []
+        for chemin in sorted(self._racine.rglob("wal.jsonl")):
+            try:
+                cle = str(chemin.parent.relative_to(self._racine)).replace("\\", "/")
+                self._parties(cle)
+            except (StoreError, ValueError):
+                continue
+            cles.append(cle)
+        return cles
+
     def _dossier(self, cle: str) -> Path:
         try:
             return sous_dossier(self._racine, *self._parties(cle))

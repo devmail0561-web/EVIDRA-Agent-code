@@ -9,7 +9,21 @@ paquet autorisé à toucher au moteur (I1) — y compris en abstraction.
 
 from __future__ import annotations
 
+import importlib.metadata
 from typing import Any, Protocol, runtime_checkable
+
+
+def version_moteur() -> str:
+    """Version du moteur installé (`unknown` si introuvable — jamais levée)."""
+    try:
+        return importlib.metadata.version("gcn-python")
+    except Exception:  # noqa: BLE001 — absence = info, pas erreur
+        try:
+            import gcn_python
+
+            return getattr(gcn_python, "__version__", "unknown")
+        except Exception:  # noqa: BLE001
+            return "unknown"
 
 
 @runtime_checkable
