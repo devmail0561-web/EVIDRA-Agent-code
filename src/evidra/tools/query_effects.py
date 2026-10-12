@@ -56,20 +56,16 @@ class OutilEffets:
             return ToolResult(
                 status=Status.FAILED, payload={"motif": f"domaine inconnu : {ctx.domain!r}"}
             )
-        index = memo.index
-        if index.sortants(concept):
-            ids, resolution = index.effets(concept), "exacte"
-        elif ids := index.effets(concept):
-            resolution = "tokens"
-        elif ids := index.par_sous_chaine(concept):
-            resolution = "sous-chaine"
-        else:
-            ids, resolution = (), "vide"
+        try:
+            ids, resolution, touche = memo.rechercher("effets", concept)
+        except ValueError as exc:
+            return ToolResult(status=Status.FAILED, payload={"motif": str(exc)})
         reponses = memo.preuves(ids)
         payload: dict[str, Any] = {
             "concept": concept,
             "reponses": reponses,
             "resolution": resolution,
+            "cache": "hit" if touche else "miss",
         }
         if not reponses:
             payload["note"] = "aucune source"

@@ -14,11 +14,13 @@ Reconstruction : `appliquer_domaine` (strict, rebuild WAL) et
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
-from collections.abc import Mapping
+from collections.abc import Hashable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from evidra.memory.cache import CacheResultats
 from evidra.memory.envelope import (
     CirCore,
     Derivation,
@@ -62,6 +64,7 @@ class Memoire:
         self.paires: dict[
             tuple[str, str, str], list[Triplet]
         ] = {}  # (domaine, src, dst) → triplets (verdicts O(1), T5.3)
+        self.cache = CacheResultats()  # requêtes répétées O(1), invalidé par topologie (T5.6)
 
     def observer(
         self,
@@ -72,7 +75,11 @@ class Memoire:
         horodatage: str,
         alias: Mapping[tuple[str, str], str] | None = None,
     ) -> Issue:
-        """Tranche nouvelle / confirmation / idempotente (T3.6, sans E/S)."""
+        """Tranche nouvelle / confirmation / idempotente (T3.6, sans E/S).
+
+        Renaissance : observation revue après tombstone ⇒ nouvelle entité
+        (nouvelle évidence, pas un rejeu — T6.1 raffinera).
+        """
         table = alias if alias is not None else {}
         src = table.get(
             (self.domaine, normaliser_label(noyau.source)), normaliser_label(noyau.source)
@@ -82,7 +89,7 @@ class Memoire:
         )
         triplet: Triplet = (self.domaine, src, noyau.relation, dst)
         observation = cle_observation(noyau, self.domaine)
-        if observation in self.vues:
+        if observation in self.vues and triplet in self.entites:
             return Issue("idempotente", self.entites[triplet], triplet, observation)
         candidat = Envelope(noyau, ingest_channel=channel)
         if triplet in self.entites:
@@ -103,7 +110,7 @@ class Memoire:
         return Issue("nouvelle", entite, triplet, observation)
 
     def ajouter(self, triplet: Triplet, observation: str, enveloppe: Envelope) -> None:
-        """Enregistre une entité (index + triplet + vue + id + paire)."""
+        """Enregistre une entité (index + triplet + vue + id + paire + invalidation)."""
         self.entites[triplet] = enveloppe
         self.vues.add(observation)
         self.par_id[id_triplet(triplet)] = triplet
@@ -114,6 +121,52 @@ class Memoire:
         self.index.ajouter(
             id_triplet(triplet), cir.source, cir.target, cir.relation, cir.confidence
         )
+        self.cache.invalider(normaliser_label(cir.source), normaliser_label(cir.target))
+
+    def retirer(self, triplet: Triplet) -> bool:
+        """Retire une entité (tombstone) : index, paires, cache ; `vues` gardées.
+
+        Pas de résurrection sans règles de cycle de vie (T6.1) : ré-observer
+        la même observation reste idempotent.
+        """
+        enveloppe = self.entites.pop(triplet, None)
+        if enveloppe is None:
+            return False
+        self.index.retirer(id_triplet(triplet))
+        self.par_id.pop(id_triplet(triplet), None)
+        paire = self.paires.get((triplet[0], triplet[1], triplet[3]))
+        if paire is not None:
+            with contextlib.suppress(ValueError):
+                paire.remove(triplet)
+            if not paire:
+                del self.paires[(triplet[0], triplet[1], triplet[3])]
+        cir = enveloppe.cir
+        self.cache.invalider(normaliser_label(cir.source), normaliser_label(cir.target))
+        return True
+
+    def rechercher(
+        self, sens: str, concept: str, *, epoque: Hashable = 0
+    ) -> tuple[tuple[str, ...], str, bool]:
+        """`(ids, résolution, hit)` : exact → tokens (cachés) → sous-chaîne (fraîche) → vide.
+
+        Seules les résolutions exacte/tokens passent par le cache (périmètre
+        borné) ; la sous-chaîne, à portée non bornable, reste toujours fraîche.
+        """
+        if sens not in ("causes", "effets"):
+            raise ValueError(f"sens inconnu : {sens!r} (causes|effets)")
+        mot = normaliser_label(concept)
+        if not mot:
+            raise ValueError("concept vide")
+        exact = self.index.entrants(concept) if sens == "causes" else self.index.sortants(concept)
+        frappe = self.cache.lire(mot, sens, epoque)
+        if frappe is not None:
+            return frappe, ("exacte" if exact else "tokens"), True
+        direct = self.index.causes(concept) if sens == "causes" else self.index.effets(concept)
+        if direct:
+            self.cache.ecrire(mot, sens, direct, epoque)
+            return direct, ("exacte" if exact else "tokens"), False
+        frais = self.index.par_sous_chaine(concept)
+        return (frais, "sous-chaine", False) if frais else ((), "vide", False)
 
     def preuves(self, ids: tuple[str, ...] | list[str]) -> list[dict[str, Any]]:
         """Preuves sourcées pour des ids d'index (I4 complet, quarantinés exclus T9.5)."""
