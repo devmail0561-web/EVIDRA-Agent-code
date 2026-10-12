@@ -1,5 +1,4 @@
 {
-  "_commentaire": "Directive dogfood T3.8 : le SA ingère SON dépôt (docs/ + src/), 100 % offline. Seuils à 0.0/ml_python PARCE QUE les poids sont bruts (B1, non calibrés) — plomberie, pas production ; la tranche T3.9 mesure avec seuils réels. Schéma validé en T4.1.",
   "agent_id": "evidra-dogfood-001",
   "domain": "code",
   "sources": [

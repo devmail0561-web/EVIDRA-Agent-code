@@ -1,0 +1,430 @@
+{
+  "$defs": {
+    "Actions": {
+      "additionalProperties": false,
+      "description": "Actions autoris\u00e9es/interdites \u00e0 l'agent.",
+      "properties": {
+        "allowed": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed",
+          "type": "array"
+        },
+        "forbidden": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Forbidden",
+          "type": "array"
+        }
+      },
+      "title": "Actions",
+      "type": "object"
+    },
+    "AgentPair": {
+      "additionalProperties": false,
+      "description": "Agent pair autoris\u00e9 (autorit\u00e9 d'\u00e9criture, \u00a78.5).",
+      "properties": {
+        "agent_id": {
+          "minLength": 1,
+          "title": "Agent Id",
+          "type": "string"
+        },
+        "domains": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Domains",
+          "type": "array"
+        },
+        "max_confidence_accepted": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Max Confidence Accepted",
+          "type": "number"
+        }
+      },
+      "required": [
+        "agent_id"
+      ],
+      "title": "AgentPair",
+      "type": "object"
+    },
+    "Budgets": {
+      "additionalProperties": false,
+      "description": "Budgets par cycle (scheduler T1.5, directive T4.4).",
+      "properties": {
+        "max_cycle_ms": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Cycle Ms"
+        },
+        "max_ingest_per_cycle": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Ingest Per Cycle"
+        },
+        "max_tool_calls": {
+          "default": 6,
+          "minimum": 1,
+          "title": "Max Tool Calls",
+          "type": "integer"
+        },
+        "max_wal_bytes": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Wal Bytes"
+        },
+        "reserve_fond": {
+          "default": 1,
+          "minimum": 0,
+          "title": "Reserve Fond",
+          "type": "integer"
+        }
+      },
+      "title": "Budgets",
+      "type": "object"
+    },
+    "PermissionDirective": {
+      "additionalProperties": false,
+      "description": "Une r\u00e8gle : outil (`*` = tous), verbe, p\u00e9rim\u00e8tre (`*` = tous).",
+      "properties": {
+        "scope": {
+          "minLength": 1,
+          "title": "Scope",
+          "type": "string"
+        },
+        "tool": {
+          "default": "*",
+          "title": "Tool",
+          "type": "string"
+        },
+        "verb": {
+          "$ref": "#/$defs/Verb"
+        }
+      },
+      "required": [
+        "verb",
+        "scope"
+      ],
+      "title": "PermissionDirective",
+      "type": "object"
+    },
+    "Permissions": {
+      "additionalProperties": false,
+      "description": "Matrice `allowed`/`forbidden` (porte `can()`, T1.4).",
+      "properties": {
+        "allowed": {
+          "items": {
+            "$ref": "#/$defs/PermissionDirective"
+          },
+          "title": "Allowed",
+          "type": "array"
+        },
+        "forbidden": {
+          "items": {
+            "$ref": "#/$defs/PermissionDirective"
+          },
+          "title": "Forbidden",
+          "type": "array"
+        }
+      },
+      "title": "Permissions",
+      "type": "object"
+    },
+    "Provisoire": {
+      "additionalProperties": false,
+      "description": "Constantes d'arbitrage \u2014 TOUTES `[provisoire]` (I9), calibration T10.3.",
+      "properties": {
+        "nmax": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "default": 50,
+          "description": "[provisoire] saturation Nmax (norm_conf)",
+          "title": "Nmax"
+        },
+        "seuil_quorum": {
+          "default": 2.0,
+          "description": "[provisoire] ratio > seuil \u21d2 l'ar\u00eate l'emporte",
+          "exclusiveMinimum": 1.0,
+          "title": "Seuil Quorum",
+          "type": "number"
+        },
+        "seuil_revision": {
+          "default": 3.0,
+          "description": "[provisoire] ratio \u2264 seuil \u21d2 EN R\u00c9VISION (amendement)",
+          "exclusiveMinimum": 1.0,
+          "title": "Seuil Revision",
+          "type": "number"
+        },
+        "t_domaine": {
+          "default": 30.0,
+          "description": "[provisoire] constante de temps (jours, demi-vie = T\u00b7ln2)",
+          "exclusiveMinimum": 0.0,
+          "title": "T Domaine",
+          "type": "number"
+        }
+      },
+      "title": "Provisoire",
+      "type": "object"
+    },
+    "Qualite": {
+      "additionalProperties": false,
+      "description": "Seuils d'admission (ingest T3.6 ; mapping m\u00e9thode en T4.1+).",
+      "properties": {
+        "min_confidence": {
+          "default": 0.7,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Min Confidence",
+          "type": "number"
+        },
+        "min_extraction_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "default": "symbolic_rust",
+          "title": "Min Extraction Method"
+        }
+      },
+      "title": "Qualite",
+      "type": "object"
+    },
+    "Sortie": {
+      "additionalProperties": false,
+      "description": "Formats et destinations (egress r\u00e9seau = verbe contr\u00f4l\u00e9, T9.9).",
+      "properties": {
+        "alert_endpoint": {
+          "default": "",
+          "title": "Alert Endpoint",
+          "type": "string"
+        },
+        "default_format": {
+          "default": "json",
+          "title": "Default Format",
+          "type": "string"
+        },
+        "report_schedule": {
+          "default": "",
+          "title": "Report Schedule",
+          "type": "string"
+        }
+      },
+      "title": "Sortie",
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "description": "Source externe : adaptateur interchangeable + config (non hardcod\u00e9e).",
+      "properties": {
+        "adapter": {
+          "minLength": 1,
+          "title": "Adapter",
+          "type": "string"
+        },
+        "config": {
+          "additionalProperties": true,
+          "title": "Config",
+          "type": "object"
+        }
+      },
+      "required": [
+        "adapter"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "Staleness": {
+      "additionalProperties": false,
+      "description": "Rythme de vieillissement du domaine (jours).",
+      "properties": {
+        "invalidate_after_days": {
+          "default": 90.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Invalidate After Days",
+          "type": "number"
+        },
+        "stale_after_days": {
+          "default": 30.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Stale After Days",
+          "type": "number"
+        }
+      },
+      "title": "Staleness",
+      "type": "object"
+    },
+    "Surveillance": {
+      "additionalProperties": false,
+      "description": "Conditions du moniteur (phase 7 ; regex valid\u00e9es anti-ReDoS).",
+      "properties": {
+        "alert_on_new_relation_involving": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Alert On New Relation Involving",
+          "type": "array"
+        },
+        "watch_cycles": {
+          "default": false,
+          "title": "Watch Cycles",
+          "type": "boolean"
+        },
+        "watch_gaps_in_chains": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Watch Gaps In Chains",
+          "type": "array"
+        }
+      },
+      "title": "Surveillance",
+      "type": "object"
+    },
+    "Verb": {
+      "enum": [
+        "read",
+        "ingest",
+        "modify",
+        "delete",
+        "alert",
+        "egress"
+      ],
+      "title": "Verb",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Directive : mission compl\u00e8te d'un agent sur un domaine (\u00a79.3).",
+  "properties": {
+    "actions": {
+      "$ref": "#/$defs/Actions"
+    },
+    "agent_id": {
+      "minLength": 1,
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "aliases": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "type": "object"
+      },
+      "description": "table d'alias par domaine (promotion humaine, \u00a719)",
+      "title": "Aliases",
+      "type": "object"
+    },
+    "budgets": {
+      "$ref": "#/$defs/Budgets"
+    },
+    "channel_ceilings": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "[provisoire] plafonds par canal, confiances non calibr\u00e9es (B1)",
+      "title": "Channel Ceilings",
+      "type": "object"
+    },
+    "delegate": {
+      "const": "disabled",
+      "default": "disabled",
+      "description": "gate P3 : toute autre valeur refus\u00e9e avant T10.7",
+      "title": "Delegate",
+      "type": "string"
+    },
+    "domain": {
+      "minLength": 1,
+      "title": "Domain",
+      "type": "string"
+    },
+    "monitoring": {
+      "$ref": "#/$defs/Surveillance"
+    },
+    "output": {
+      "$ref": "#/$defs/Sortie"
+    },
+    "permissions": {
+      "$ref": "#/$defs/Permissions"
+    },
+    "quality": {
+      "$ref": "#/$defs/Qualite"
+    },
+    "semantic_index_min_edges": {
+      "default": 500000,
+      "exclusiveMinimum": 0,
+      "title": "Semantic Index Min Edges",
+      "type": "integer"
+    },
+    "seuils_provisoires": {
+      "$ref": "#/$defs/Provisoire"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/Source"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "staleness": {
+      "$ref": "#/$defs/Staleness"
+    },
+    "trusted_agents": {
+      "items": {
+        "$ref": "#/$defs/AgentPair"
+      },
+      "title": "Trusted Agents",
+      "type": "array"
+    }
+  },
+  "required": [
+    "agent_id",
+    "domain"
+  ],
+  "title": "Directive",
+  "type": "object"
+}
