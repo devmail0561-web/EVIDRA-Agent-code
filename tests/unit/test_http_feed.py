@@ -156,3 +156,13 @@ def test_parse_corrompu_ignore_compte(monkeypatch: pytest.MonkeyPatch) -> None:
     adaptateur = AdaptateurFlux([URL], timeout_s=1.0)
     assert adaptateur.poll(None) == []
     assert adaptateur.compteurs.get("parse") == 1
+
+
+def test_hote_hors_liste_blanche_refuse(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _jamais(url: str, **_kw: Any) -> Any:
+        raise AssertionError(f"httpx.get ne doit pas être appelé : {url}")
+
+    monkeypatch.setattr(httpx, "get", _jamais)
+    adaptateur = AdaptateurFlux([URL], timeout_s=1.0, egress_hotes=["autre.example.com"])
+    assert adaptateur.poll(None) == []
+    assert adaptateur.compteurs.get("egress_refuse") == 1

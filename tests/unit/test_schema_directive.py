@@ -68,6 +68,17 @@ def test_schema_commis_a_jour() -> None:
     assert commis == schema_json()
 
 
+def test_bornes_numeriques_durcies() -> None:
+    with pytest.raises(DirectiveError, match="nmax"):
+        valider({**_dogfood(), "seuils_provisoires": {"nmax": 0}})
+    with pytest.raises(DirectiveError, match="file_max"):
+        valider({**_dogfood(), "budgets": {"file_max": 200_000}})
+    with pytest.raises(DirectiveError):
+        valider({**_dogfood(), "budgets": {"timeout_travailleur_s": float("inf")}})
+    with pytest.raises(DirectiveError):
+        valider({**_dogfood(), "staleness": {"stale_after_days": float("inf")}})
+
+
 def test_politique_branchee_sur_can() -> None:
     directive = valider(
         {

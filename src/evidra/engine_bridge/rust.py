@@ -79,9 +79,19 @@ def interroger_chaine(
     """`CHAIN a -> b?` : résultat (`found`/`links`/`ranked_paths`) validé.
 
     `timeout_s=None` ⇒ défaut canonique directive (`Budgets.timeout_travailleur_s`, I9).
+
+    Anti-injection GCN-QL : rejet des métacaractères de requête (`;`, `?`,
+    `#`, quotes, `->`) en plus du `\n` — les labels sont interpolés dans
+    `CHAIN a -> b?` et ne doivent pas en altérer la grammaire.
     """
     for label in (de_label, vers_label):
-        if not isinstance(label, str) or not label.strip() or "\n" in label:
+        if (
+            not isinstance(label, str)
+            or not label.strip()
+            or "\n" in label
+            or "->" in label
+            or any(c in label for c in ";?#\"'")
+        ):
             raise ValueError(f"label de requête invalide : {label!r}")
     reponse = interroger(
         binaire, iri, f"CHAIN {de_label.strip()} -> {vers_label.strip()}?", timeout_s=timeout_s

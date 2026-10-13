@@ -36,32 +36,50 @@ class Budgets(_Base):
 
     max_tool_calls: int = Field(default=6, ge=1)
     max_ingest_per_cycle: int | None = Field(default=None, ge=1)
-    max_cycle_ms: float | None = Field(default=None, gt=0.0)
+    max_cycle_ms: float | None = Field(default=None, gt=0.0, allow_inf_nan=False)
     max_wal_bytes: int | None = Field(default=None, gt=0)
     reserve_fond: int = Field(default=1, ge=0)
     timeout_travailleur_s: float = Field(
-        default=30.0, gt=0.0, description="[provisoire] timeout workers extract/reason/Rust (T1.5)"
+        default=30.0,
+        gt=0.0,
+        allow_inf_nan=False,
+        description="[provisoire] timeout workers extract/reason/Rust (T1.5)",
     )
     timeout_http_s: float = Field(
-        default=5.0, gt=0.0, description="[provisoire] timeout requêtes HTTP flux (T9.8)"
+        default=5.0,
+        gt=0.0,
+        allow_inf_nan=False,
+        description="[provisoire] timeout requêtes HTTP flux (T9.8)",
     )
     backoff_plafond_s: float = Field(
-        default=300.0, gt=0.0, description="[provisoire] plafond du backoff flux (T9.8)"
+        default=300.0,
+        gt=0.0,
+        allow_inf_nan=False,
+        description="[provisoire] plafond du backoff flux (T9.8)",
     )
     attente_boucle_s: float = Field(
-        default=0.05, gt=0.0, description="[provisoire] attente entre ticks à vide (T4.4)"
+        default=0.05,
+        gt=0.0,
+        allow_inf_nan=False,
+        description="[provisoire] attente entre ticks à vide (T4.4)",
     )
     fsync_batch_lignes: int = Field(
         default=100, ge=1, description="[provisoire] fsync WAL toutes les N lignes (T2.1)"
     )
     fsync_batch_ms: float = Field(
-        default=1000.0, gt=0.0, description="[provisoire] fsync WAL au plus tous les N ms (T2.1)"
+        default=1000.0,
+        gt=0.0,
+        allow_inf_nan=False,
+        description="[provisoire] fsync WAL au plus tous les N ms (T2.1)",
     )
     cache_taille_max: int = Field(
         default=1024, ge=1, description="[provisoire] entrées max du cache requêtes LRU (T5.6)"
     )
     file_max: int = Field(
-        default=1000, ge=1, description="[provisoire] événements externes en attente max (API)"
+        default=1000,
+        ge=1,
+        le=100_000,
+        description="[provisoire] événements externes en attente max (API)",
     )
 
 
@@ -91,10 +109,16 @@ class Staleness(_Base):
     """Rythme de vieillissement du domaine (jours)."""
 
     stale_after_days: float = Field(
-        default=30.0, gt=0.0, description="[provisoire] STALE après N jours (étude : CTI 30 j)"
+        default=30.0,
+        gt=0.0,
+        allow_inf_nan=False,
+        description="[provisoire] STALE après N jours (étude : CTI 30 j)",
     )
     invalidate_after_days: float = Field(
-        default=90.0, gt=0.0, description="[provisoire] INVALIDÉE après N jours sans re-confirm."
+        default=90.0,
+        gt=0.0,
+        allow_inf_nan=False,
+        description="[provisoire] INVALIDÉE après N jours sans re-confirm.",
     )
     retention_jours: int | None = Field(
         default=None, ge=1, description="T9.10 : purge des preuves après délai (None = conserver)"
@@ -107,9 +131,12 @@ class Provisoire(_Base):
     t_domaine: float = Field(
         default=30.0,
         gt=0.0,
+        allow_inf_nan=False,
         description="[provisoire] constante de temps (jours, demi-vie = T·ln2)",
     )
-    nmax: float | int = Field(default=50, description="[provisoire] saturation Nmax (norm_conf)")
+    nmax: float | int = Field(
+        default=50, gt=0, description="[provisoire] saturation Nmax (norm_conf)"
+    )
     seuil_quorum: float = Field(
         default=2.0, gt=1.0, description="[provisoire] ratio > seuil ⇒ l'arête l'emporte"
     )

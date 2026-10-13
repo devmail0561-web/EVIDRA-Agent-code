@@ -20,7 +20,7 @@
 | 9 — Sécurité/réseau | J9 ✅ | T9.1–T9.10 | Clos : plafonds, signatures, agent_push, détecteurs, quarantaine, corpus adversarial, http_feed, egress, rétention |
 | 10 | — | — | Non commencée (gatée B1–B4) |
 
-Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **463 tests**, tous verts.
+Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **475 tests**, tous verts.
 
 ## 2. Architecture réelle
 
@@ -289,3 +289,16 @@ Audit complet (invariants + sécurité + robustesse + tests) : plusieurs finding
 Écartés (documentés, non implémentés) : `can()` partout (ingest déjà gaté, read = défaut-autorisé, `alert` = moniteur interne dont l'egress est déjà whitelisté par `verifier_egress`), SSRF `http_feed` (adaptateur non câblé en prod — latent), échappement des labels de sortie (déjà quotés entre « » / champs JSON), liste `INJONCTIONS` (calibration T10 assumée).
 
 - Compteur : **463 tests**, offline 449 + 14 skipped, noyau 499/500, gardes vertes.
+
+## 27. Second audit (flux de données) — réfuté puis corrigé
+
+Deuxième audit (approche taint : source→puits) : la plupart des findings ont été **réfutés** après vérification — ils traitaient l'opérateur (directive signée), l'environnement (`GCN_BIN`/PATH) et le pair autorisé (HMAC) comme des attaquants, ou portaient sur du code latent/non câblé. Ne survivent que deux correctifs de sécurité réels + de l'hygiène de schéma :
+
+- **SSRF `http_feed` (corrigé)** : `verifier_egress(url, egress_hotes)` avant chaque `httpx.get` + `follow_redirects=False` ; `egress_hotes` injectable au constructeur (à câbler dans `demarrage` quand l'adaptateur sera branché). Liste vide ⇒ fail-closed (tout hôte refusé).
+- **Injection GCN-QL (corrigé)** : `interroger_chaine` rejette les métacaractères (`;`, `?`, `#`, `->`, quotes) en plus du `\n` — pas d'injection shell (argv), mais détournement possible de la grammaire `CHAIN a -> b?`.
+- **Bornes de schéma (hygiène)** : `nmax` `gt=0`, `file_max` `le=100000`, `allow_inf_nan=False` sur les floats `gt>0` sensibles (`timeout_*`, `max_cycle_ms`, `staleness.*`, `t_domaine`) — rejette `inf`/`nan` (pydantic v2).
+- **Egress alerte sans redirection** : opener `urllib` sans `HTTPRedirectHandler` (un endpoint whitelisté ne peut plus dévier vers un hôte hors liste).
+
+Réfutés (documentés, non implémentés) : ReDoS par alternation (regex = directive opérateur, auto-DoS), `nmax`/`content_sha256`/labels-bruts/span/`ref` pair (données de confiance ou couvertes par HMAC), `GCN_BIN`/PATH (frontière de déploiement), lecture inter-domaines (décision C reportée — modèle mono-domaine).
+
+- Compteur : **475 tests**, offline 461 + 14 skipped, noyau 499/500, gardes vertes.

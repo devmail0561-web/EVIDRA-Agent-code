@@ -33,6 +33,14 @@ def test_doit_emettre_fenetre() -> None:
     assert doit_emettre("illisible", maintenant_iso=t0, fenetre_s=3600) is True
 
 
+def test_egress_sans_redirection() -> None:
+    from evidra.tools.alert import _OUVREUR_SANS_REDIRECTION, _SansRedirection
+
+    handler = _SansRedirection()
+    assert handler.redirect_request(None, None, 302, "Found", {}, "http://x") is None
+    assert any(isinstance(h, _SansRedirection) for h in _OUVREUR_SANS_REDIRECTION.handlers)
+
+
 def test_registre_alertes_cycle(tmp_path: Path) -> None:
     with _magasin(tmp_path) as magasin:
         registres = Registres(magasin)

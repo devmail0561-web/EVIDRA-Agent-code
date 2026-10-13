@@ -196,6 +196,7 @@
         "file_max": {
           "default": 1000,
           "description": "[provisoire] événements externes en attente max (API)",
+          "maximum": 100000,
           "minimum": 1,
           "title": "File Max",
           "type": "integer"
@@ -303,6 +304,7 @@
           ],
           "default": 50,
           "description": "[provisoire] saturation Nmax (norm_conf)",
+          "gt": 0,
           "title": "Nmax"
         },
         "seuil_quorum": {

@@ -30,6 +30,7 @@ import feedparser
 import httpx
 
 from evidra.kernel.contracts import CostHint, Cursor, RawDoc
+from evidra.security.egress import verifier_egress
 
 try:  # pont worker dispo ⇒ timeout directive appliqué hors scheduler
     from evidra.engine_bridge.travailleur import WorkerTimeout
@@ -86,8 +87,13 @@ class AdaptateurFlux:
         backoff_plafond_s: float | None = None,
         canal: str = "http_feed",
         etag_store: MutableMapping[str, Any] | None = None,
+        egress_hotes: list[str] | tuple[str, ...] | set[str] | None = None,
     ) -> None:
-        """`timeout_s`/`backoff_plafond_s=None` ⇒ canoniques directive (`Budgets`, I9)."""
+        """`timeout_s`/`backoff_plafond_s=None` ⇒ canoniques directive (`Budgets`, I9).
+
+        `egress_hotes=None` ⇒ pas de liste configurée (héritage ouvert, T9.9) ;
+        sinon chaque URL est vérifiée contre la liste blanche (fail-closed).
+        """
         from evidra.directive.schema import backoff_plafond_defaut, timeout_http_defaut
 
         delai = timeout_http_defaut() if timeout_s is None else timeout_s
@@ -123,6 +129,7 @@ class AdaptateurFlux:
         self._timeout_s = float(delai)
         self._plafond_backoff = float(plafond)
         self.canal = canal
+        self._egress_hotes = egress_hotes
         self._cache: MutableMapping[str, Any] = etag_store if etag_store is not None else {}
         self._etat: set[str] = set()
         self._echecs: dict[str, int] = {}
@@ -138,6 +145,12 @@ class AdaptateurFlux:
             if time.monotonic() < self._prochain_essai.get(url, 0.0):
                 log.debug("backoff : flux sauté", extra={"url": url})
                 continue
+            if self._egress_hotes is not None:
+                ok, motif = verifier_egress(url, self._egress_hotes)
+                if not ok:
+                    self._compter("egress_refuse")
+                    log.warning("flux hors liste blanche", extra={"url": url, "motif": motif})
+                    continue
             try:
                 reponse = self._telecharger(url)
             except Exception as exc:  # réseau/timeout worker : dégradé, cycle continue
@@ -212,7 +225,7 @@ class AdaptateurFlux:
                 headers["If-Modified-Since"] = modifie
 
         def _get() -> httpx.Response:
-            return httpx.get(url, headers=headers, timeout=self._timeout_s, follow_redirects=True)
+            return httpx.get(url, headers=headers, timeout=self._timeout_s, follow_redirects=False)
 
         if _lancer_worker is not None:
             return _lancer_worker(_get, self._timeout_s)

@@ -36,6 +36,17 @@ from evidra.util import garde
 _LOG = logging.getLogger(__name__)
 
 
+class _SansRedirection(urllib.request.HTTPRedirectHandler):
+    """Refuse toute redirection (T9.9) : un hôte whitelisté ne doit pas dévier."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D102
+        del req, fp, code, msg, headers, newurl
+        return None
+
+
+_OUVREUR_SANS_REDIRECTION = urllib.request.build_opener(_SansRedirection())
+
+
 class OutilAlert:
     """Outil intégré `alert` : 1 fichier = 1 outil + manifeste."""
 
@@ -181,7 +192,8 @@ class OutilAlert:
 
     def _egresser(self, payload: Mapping[str, Any]) -> str | None:
         """POST best-effort ; `None` si envoyé, motif dégradé sinon (T9.9 whitelist)."""
-        assert self._endpoint is not None
+        if self._endpoint is None:
+            return "egress sans endpoint"
         from evidra.security.egress import verifier_egress
 
         ok, motif = verifier_egress(self._endpoint, self._egress_hotes)
@@ -194,7 +206,7 @@ class OutilAlert:
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            with urllib.request.urlopen(requete, timeout=self._timeout_egress_s) as reponse:
+            with _OUVREUR_SANS_REDIRECTION.open(requete, timeout=self._timeout_egress_s) as reponse:
                 if 200 <= reponse.status < 300:
                     return None
                 return f"egress {self._endpoint} : HTTP {reponse.status}"
