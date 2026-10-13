@@ -62,12 +62,13 @@ class Memoire:
         domaine: str,
         seuils: tuple[float, float] | None = None,
         n_confirmee: int | None = None,
+        limite_repli: int | None = None,
     ) -> None:
         self.domaine = domaine
         self._n_confirmee = n_confirmee if n_confirmee is not None else n_confirmation_defaut()
         self.entites: dict[Triplet, Envelope] = {}
         self.vues: set[str] = set()
-        self.index = Index(seuils)
+        self.index = Index(seuils, limite_repli)
         self.par_id: dict[str, Triplet] = {}  # id d'index → triplet (stable sous alias T6.5)
         self.paires: dict[
             tuple[str, str, str], list[Triplet]
@@ -87,11 +88,13 @@ class Memoire:
         fiabilite: float,
         horodatage: str,
         alias: Mapping[tuple[str, str], str] | None = None,
+        quarantaine: str | None = None,
     ) -> Issue:
         """Tranche nouvelle / confirmation / idempotente (T3.6, sans E/S).
 
         Renaissance : observation revue après tombstone ⇒ nouvelle entité
         (nouvelle évidence, pas un rejeu — T6.1 raffinera).
+        `quarantaine` (T9.5) : motif posé sur les nouvelles entités.
         """
         table = alias if alias is not None else {}
         src = table.get(
@@ -109,6 +112,8 @@ class Memoire:
             entite = self.entites[triplet]
             confirmer(entite, candidat, horodatage=horodatage)  # extraction seule : accepté (I6)
             promouvoir(entite, n_confirmee=self._n_confirmee)  # T6.1 : statut suit le compte
+            if entite.quarantine is not None and channel != "agent_push":
+                entite.quarantine = None  # T9.3 : seul un non-agent libère (anti-Sybil)
             self.vues.add(observation)
             return Issue("confirmation", entite, triplet, observation)
         entite = Envelope(
@@ -120,6 +125,7 @@ class Memoire:
             ingest_channel=channel,
             derivation=Derivation.EXTRAITE,
             etiquettes_brutes=(noyau.source, noyau.target),
+            quarantine=quarantaine,
         )
         self.ajouter(triplet, observation, entite)
         return Issue("nouvelle", entite, triplet, observation)
@@ -166,6 +172,20 @@ class Memoire:
         if enveloppe is None:
             return False, f"triplet inconnu : {triplet[1:]}"
         return transition(enveloppe, cible, motif=motif)
+
+    def mettre_quarantaine(self, triplet: Triplet, motif: str | None) -> tuple[bool, str]:
+        """Pose (`motif`) ou lève (`None`) la quarantaine (T9.5).
+
+        Motif vide refusé ; écriture WAL (`quarantine`, capsule complète)
+        par l'appelant. Libération automatique : confirmation non-agent (T9.3).
+        """
+        enveloppe = self.entites.get(triplet)
+        if enveloppe is None:
+            return False, f"triplet inconnu : {triplet[1:]}"
+        if motif is not None and not motif.strip():
+            return False, "motif de quarantaine vide refusé"
+        enveloppe.quarantine = motif
+        return True, motif or "quarantaine levée"
 
     def candidats_alias(
         self, table: Mapping[tuple[str, str], str] | None = None
@@ -291,7 +311,7 @@ def appliquer_domaine(etat: dict[str, Any], enr: Any) -> None:
             raise ValueError(f"triplet illisible : {brut!r}")
         return (brut[0], brut[1], brut[2], brut[3])
 
-    if enr.op in ("add_edge", "confirm", "update_status"):
+    if enr.op in ("add_edge", "confirm", "update_status", "quarantine"):
         triplet = _triplet(enr.donnees)
         etat[id_triplet(triplet)] = dict(enr.donnees)
     elif enr.op == "tombstone":
@@ -304,7 +324,8 @@ def memoire_depuis_etat(
     etat: Mapping[str, Any],
     seuils: tuple[float, float] | None = None,
     n_confirmee: int | None = None,
+    limite_repli: int | None = None,
 ) -> tuple[Memoire, int]:
     """Rebuild : `(mémoire, ignorés)` — tolérant par capsule (I12)."""
-    memoire = Memoire(domaine, seuils, n_confirmee)
+    memoire = Memoire(domaine, seuils, n_confirmee, limite_repli)
     return memoire, memoire.reconstruire(etat)

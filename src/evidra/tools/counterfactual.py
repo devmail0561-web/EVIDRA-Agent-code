@@ -59,11 +59,13 @@ class OutilContrefactuel:
         memoires: dict[str, Memoire],
         *,
         interroger: Interroger | None = None,
-        timeout_s: float = 30.0,
+        timeout_s: float | None = None,
     ) -> None:
+        from evidra.directive.schema import timeout_travailleur_defaut
+
         self._memoires = memoires
         self._interroger = interroger if interroger is not None else interroger_rust
-        self._timeout_s = timeout_s
+        self._timeout_s = timeout_travailleur_defaut() if timeout_s is None else timeout_s
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Effets si le concept n'avait pas eu lieu (étiquetés) ; jamais levée."""

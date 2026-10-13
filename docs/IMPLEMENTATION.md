@@ -1,6 +1,6 @@
-# Evidra (SA) — Journal d'implémentation (T0 → T4.7, J4 clos)
+# Evidra (SA) — Journal d'implémentation (T0 → T9.10, J9 clos)
 
-> Exhaustif, détaillé, concis. État au 2026-10-12 (J4 clos, voir §14).
+> Exhaustif, détaillé, concis. État au 2026-10-13 (J9 clos, voir §20).
 > Source de conception : `ETUDE_SA.md` (30 sections). Plan : `PLAN_SA.md` (+ patchs P1–P7 appliqués).
 > Dépôt : `devmail0561-web/EVIDRA-Agent-code`, branche `main`. Moteur : `gcn-python 4.0.0` @ `20163da` (branche refacto non mergée, cf. `engine-compat.md`).
 
@@ -13,9 +13,14 @@
 | 2 — Mémoire | J2 ✅ | T2.1–T2.8 | Vert : crash sans perte, compaction éprouvée, index≡scan, SLO mesurés |
 | 3 — Pont moteur | J3 ✅ | T3.1–T3.9 | Clos : dogfood offline + 5 nombres écrits |
 | 4 — Directives/boucle | J4 ✅ | T4.1–T4.7 | Clos : boucle gouvernée + CLI + arrêt propre |
-| 4–10 | — | — | Non commencées |
+| 5 — Lecture/validateur | J5 ✅ | T5.1–T5.9 | Clos : requêtes sourcées, validate, cache, formats |
+| 6 — Cycle de vie | J6 ✅ | T6.1–T6.8 | Clos : statuts, arbitrage, sources, alias, déduction |
+| 7 — Moniteur | J7 ✅ | T7.1–T7.4 | Clos : conditions, alertes P1, lacunes, corpus |
+| 8 — API | J8 ✅ | T8.1–T8.6 | Clos : FastAPI, auth, directive signée |
+| 9 — Sécurité/réseau | J9 ✅ | T9.1–T9.10 | Clos : plafonds, signatures, agent_push, détecteurs, quarantaine, corpus adversarial, http_feed, egress, rétention |
+| 10 | — | — | Non commencée (gatée B1–B4) |
 
-Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **186 tests**, tous verts.
+Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **437 tests**, tous verts.
 
 ## 2. Architecture réelle
 
@@ -218,3 +223,20 @@ Toujours reporté (inchangé, assumé) : `tools/ → memory/` direct, P1–P3 mo
 - **T8.5** : `tests/api/` (contrats, formats, 401/403, directive signée/rollback, 503, charge 8×32 sans corruption) + `test_pont_api.py` (mapping, timeout 504) ; skip explicite sous `--disable-socket` (TestClient exige loopback) ; CI : extras `api`+`network`, job OpenAPI.
 - **T8.6** : `evidra serve` (+ `--hote/--port/--essai`) + `docs/runbook.md` (démarrage, auth, crash, compaction, alertes).
 - Compteur : **394 tests** (378 + 16 API/pont), noyau 499/500, `mypy` 21 fichiers (api hors strict : fastapi optionnel), `lint-imports` KEPT, I9 7 constantes.
+
+## 20. Phase 9 — sécurité et adaptateurs réseau (T9.1–T9.10, J9 clos)
+
+- **T9.1** (plafonds par canal) : `Seuils.plafonds` (canal → confiance max) câblé depuis `directive.channel_ceilings` au démarrage ; `OutilIngest` plafonne (`dataclasses_replace`, compteur `plafonnees` au reçu) avant seuils d'admission ; valeurs `[provisoire]` (B1).
+- **T9.2** (`security/signing.py`, pur, stdlib) : `signer`/`verifier` HMAC-SHA256 (fail-closed avant inspection : non signé, algorithme hors liste, clé absente/inconnue/révoquée, nonce absent/rejoué, ts illisible/hors fenêtre 5 min) + `cibles_rotation()` (reclassement EN RÉVISION) ; `AgentPair.cle_id` au schéma (vide = rejet).
+- **T9.3** (`adapters/agent_push.py`) : `AdaptateurPush` (file thread-safe, `poll`/`ack`/curseur opaque, `requires_network=False`) + `ingerer_pousses()` (signature T9.2, domaine autorisé, confiance plafonnée `max_confidence_accepted`, entrée NOUVELLE canal `agent_push`) + entry-point ; anti-Sybil : `Memoire.observer` ne libère la quarantaine que sur confirmation non-agent.
+- **T9.4** (`security/content.py`, pur) : taxonomie fermée `instruction` (injonctions FR/EN) / `provenance_forgee` (`ref` non résolvable) / `contradiction_fabriquee` (fardeau sur l'arrivant, primitive pure) / `saturation` (renvoi budgets) ; `analyser()` best-effort, jamais levée.
+- **T9.5** (quarantaine) : `Memoire.mettre_quarantaine()` (motif exigé) + op WAL `quarantine` (capsule complète, rejouée) ; `preuves()` exclut les quarantinés (requêtes + `validate` héritent) ; `OutilIngest(quarantaine=)` ; F1 (`traiter_document(detecteur=)`, défaut `detecteur_defaut` T9.4) pose le motif ; `evidra quarantine list|poser|lever` (`quarantine_cli.py`, list sans verrou, mutations verrouillées). Garde I3 : 10e écrivain revu.
+- **T9.6** (séparation donnée/instruction) : constats — `output/llm.py` (données seules, jamais de prose), `output/human.py` (faits quotés « », sources attribuées en fin) ; `tests/unit/test_securite_t9.py` (JSON compact sans clé d'instruction, citations quotées, scan AST des 4 gabarits).
+- **T9.7** (corpus adversarial) : `benchmarks/adversarial-corpus.json` (12 cas : instruction FR/EN, provenance forgée, combiné, contradictions gold, propres) + `tests/adversarial/test_corpus.py` (`analyser` == verdicts + runners `local_files`/`agent_push` : hostile ⇒ quarantaine, propre ⇒ preuve).
+- **T9.8** (`adapters/http_feed.py`) : `AdaptateurFlux` (`requires_network=True`) — httpx en worker (`travailleur.lancer`, repli timeout direct), feedparser, ETag/`If-Modified-Since` + backoff plafonné 300 s (`[provisoire]`, I9), un `RawDoc` par entrée (`published_at` si dispo) ; échec ⇒ ignoré compté, jamais levé ; entry-point déclaré.
+- **T9.9** (egress whitelist) : `security/egress.py` (`hote_autorise`/`verifier_egress`, fail-closed) ; `Sortie.egress_hotes` (vide = aucun egress) câblé à `OutilAlert(egress_hotes=)` (refus whitelist ⇒ motif dégradé avant tout envoi).
+- **T9.10** (rétention §17.6) : `Staleness.retention_jours` (`None` = conserver) ; `memory/retention.py` (`candidates()` pur) ; `evidra purger` (tombstone + registre `registry/suppressions`, verrouillé ; sans politique ⇒ no-op tracé).
+- **I9 strict** : `timeout_s`/`fenetre_s`/`timeout_egress_s` sans défaut littéral — `None` ⇒ défaut canonique du schéma (`timeout_travailleur_defaut`, `timeout_egress_defaut`, `fenetre_alertes_defaut`, `alertes_rapport_max_defaut`, `timeout_api_defaut`) ; `ContexteAPI.timeout_travailleur_s` en dernier champ (`default_factory`, compat tests) ; `directive.schema.json` re-exporté.
+- **Correctif offline** : `tests/api/conftest.py` ne skippait pas que l'API mais TOUTE la suite sous `--disable-socket` (hook session) — restreint aux `nodeid` `/api/` (le job offline passait vacuole avant).
+- Compteur : **437 tests** (394 + 43 : signing, agent_push, http_feed 19, quarantaine 4, adversarial, sécu T9), noyau 499/500, `mypy` strict vert, `lint-imports` KEPT, I9 9 constantes, offline 424 passed + 13 skipped (API).
+- **J9 clos** : hostile ou pair compromis ⇒ confiance plafonnée, quarantaine incontournable (anti-Sybil), instructions détectées, egress whitelisé, preuves purgées à délai.

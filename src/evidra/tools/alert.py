@@ -66,9 +66,14 @@ class OutilAlert:
         seuils_sources: SeuilsSources,
         sortie: Path,
         horloge: Callable[[], str],
+        *,
         endpoint: str | None = None,
-        fenetre_s: int = 3600,
+        fenetre_s: int | None = None,
+        timeout_egress_s: float | None = None,
+        egress_hotes: list[str] | tuple[str, ...] | set[str] | None = None,
     ) -> None:
+        from evidra.directive.schema import fenetre_alertes_defaut, timeout_egress_defaut
+
         self._memoires = memoires
         self._registres = registres
         self._motifs = list(motifs)
@@ -77,7 +82,11 @@ class OutilAlert:
         self._sortie = sortie
         self._horloge = horloge
         self._endpoint = endpoint
-        self._fenetre_s = fenetre_s
+        self._fenetre_s = fenetre_alertes_defaut() if fenetre_s is None else fenetre_s
+        self._timeout_egress_s = (
+            timeout_egress_defaut() if timeout_egress_s is None else timeout_egress_s
+        )
+        self._egress_hotes = egress_hotes
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Évalue → lève → émet ; jamais levée."""
@@ -171,8 +180,13 @@ class OutilAlert:
             flux.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
 
     def _egresser(self, payload: Mapping[str, Any]) -> str | None:
-        """POST best-effort ; `None` si envoyé, motif dégradé sinon."""
+        """POST best-effort ; `None` si envoyé, motif dégradé sinon (T9.9 whitelist)."""
         assert self._endpoint is not None
+        from evidra.security.egress import verifier_egress
+
+        ok, motif = verifier_egress(self._endpoint, self._egress_hotes)
+        if not ok:
+            return motif
         try:
             requete = urllib.request.Request(
                 self._endpoint,
@@ -180,7 +194,7 @@ class OutilAlert:
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            with urllib.request.urlopen(requete, timeout=5) as reponse:
+            with urllib.request.urlopen(requete, timeout=self._timeout_egress_s) as reponse:
                 if 200 <= reponse.status < 300:
                     return None
                 return f"egress {self._endpoint} : HTTP {reponse.status}"

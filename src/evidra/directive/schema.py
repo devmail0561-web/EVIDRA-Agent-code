@@ -36,6 +36,9 @@ class Budgets(_Base):
     max_cycle_ms: float | None = Field(default=None, gt=0.0)
     max_wal_bytes: int | None = Field(default=None, gt=0)
     reserve_fond: int = Field(default=1, ge=0)
+    timeout_travailleur_s: float = Field(
+        default=30.0, gt=0.0, description="timeout workers extract/reason/Rust (T1.5)"
+    )
 
 
 class PermissionDirective(_Base):
@@ -65,6 +68,9 @@ class Staleness(_Base):
 
     stale_after_days: float = Field(default=30.0, gt=0.0)
     invalidate_after_days: float = Field(default=90.0, gt=0.0)
+    retention_jours: int | None = Field(
+        default=None, ge=1, description="T9.10 : purge des preuves après délai (None = conserver)"
+    )
 
 
 class Provisoire(_Base):
@@ -130,6 +136,9 @@ class Qualite(_Base):
         default=(0.85, 0.65),
         description="[provisoire] tiers confiance index (high, medium), étude §7.2",
     )
+    limite_repli_lexical: int = Field(
+        default=50, ge=1, description="borne du repli sous-chaîne (T2.5)"
+    )
 
     @field_validator("seuils_tiers")
     @classmethod
@@ -151,6 +160,36 @@ def n_confirmation_defaut() -> int:
     return int(Provisoire.model_fields["n_confirmation"].default)
 
 
+def limite_repli_defaut() -> int:
+    """Borne canonique du repli lexical (source unique : `Qualite`, I9)."""
+    return int(Qualite.model_fields["limite_repli_lexical"].default)
+
+
+def timeout_travailleur_defaut() -> float:
+    """Timeout canonique workers extract/reason/Rust (source unique : `Budgets`, I9)."""
+    return float(Budgets.model_fields["timeout_travailleur_s"].default)
+
+
+def timeout_egress_defaut() -> float:
+    """Timeout canonique egress alertes (source unique : `Surveillance`, I9)."""
+    return float(Surveillance.model_fields["timeout_egress_s"].default)
+
+
+def fenetre_alertes_defaut() -> int:
+    """Fenêtre canonique dédup alertes (source unique : `Surveillance`, I9)."""
+    return int(Surveillance.model_fields["dedup_fenetre_s"].default)
+
+
+def alertes_rapport_max_defaut() -> int:
+    """Nombre canonique d'alertes par reçu (source unique : `Surveillance`, I9)."""
+    return int(Surveillance.model_fields["alertes_rapport_max"].default)
+
+
+def timeout_api_defaut() -> float:
+    """Timeout canonique réponse scheduler (source unique : `ApiConfig`, I9)."""
+    return float(ApiConfig.model_fields["timeout_s"].default)
+
+
 class Surveillance(_Base):
     """Conditions du moniteur (phase 7 ; regex validées anti-ReDoS)."""
 
@@ -167,6 +206,12 @@ class Surveillance(_Base):
     )
     seuil_invalidation: float = Field(
         default=0.80, ge=0.0, le=1.0, description="haute confiance invalidée ⇒ critique (T7.1)"
+    )
+    timeout_egress_s: float = Field(
+        default=5.0, gt=0.0, description="timeout envoi alertes (T7.2, best-effort)"
+    )
+    alertes_rapport_max: int = Field(
+        default=5, ge=1, description="alertes retenues par reçu de boucle (T4.4)"
     )
 
     @field_validator("alert_on_new_relation_involving")
@@ -195,6 +240,10 @@ class Sortie(_Base):
     default_format: str = "json"
     alert_endpoint: str = ""
     report_schedule: str = ""
+    egress_hotes: list[str] = Field(
+        default_factory=list,
+        description="T9.9 : hôtes autorisés en sortie (vide = aucun egress, fail-closed)",
+    )
 
 
 class AgentPair(_Base):
@@ -203,6 +252,9 @@ class AgentPair(_Base):
     agent_id: str = Field(min_length=1)
     domains: list[str] = Field(default_factory=list)
     max_confidence_accepted: float = Field(default=1.0, ge=0.0, le=1.0)
+    cle_id: str = Field(
+        default="", description="clé HMAC (api.cles_directive), vide = rejet (T9.3)"
+    )
 
 
 class JetonApi(_Base):
@@ -221,6 +273,7 @@ class ApiConfig(_Base):
         default_factory=dict,
         description="clé_id → secret HMAC (fichier 0600, jamais repo, T8.3)",
     )
+    timeout_s: float = Field(default=5.0, gt=0.0, description="attente réponse scheduler (T8.1)")
 
 
 class Directive(_Base):

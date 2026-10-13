@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from evidra.directive.schema import seuils_tiers_defaut
+from evidra.directive.schema import limite_repli_defaut, seuils_tiers_defaut
 from evidra.memory.envelope import normaliser_label
 
 
@@ -39,12 +39,17 @@ class _Arete:
 class Index:
     """Index d'un domaine : arêtes adressables par label, tokens, relation."""
 
-    def __init__(self, seuils: tuple[float, float] | None = None) -> None:
+    def __init__(
+        self, seuils: tuple[float, float] | None = None, limite_repli: int | None = None
+    ) -> None:
         haut, moyen = seuils if seuils is not None else seuils_tiers_defaut()
         if not 0.0 <= moyen <= haut <= 1.0:
             raise ValueError(f"seuils de tiers invalides : {(haut, moyen)}")
         self._seuil_haut = haut
         self._seuil_moyen = moyen
+        self._limite_repli = limite_repli if limite_repli is not None else limite_repli_defaut()
+        if self._limite_repli < 1:
+            raise ValueError(f"limite de repli invalide : {limite_repli!r}")
         self._aretes: dict[str, _Arete] = {}
         self._depuis: dict[str, set[str]] = {}
         self._vers: dict[str, set[str]] = {}
@@ -128,8 +133,9 @@ class Index:
             unions |= self._tokens.get(token, set())
         return tuple(sorted(unions))
 
-    def par_sous_chaine(self, fragment: str, limite: int = 50) -> tuple[str, ...]:
+    def par_sous_chaine(self, fragment: str, limite: int | None = None) -> tuple[str, ...]:
         """Dernier recours borné : ids dont un token contient le fragment."""
+        plafond = limite if limite is not None else self._limite_repli
         frag = normaliser_label(fragment)
         if not frag:
             return ()
@@ -137,9 +143,9 @@ class Index:
         for token, porteurs in self._tokens.items():
             if frag in token:
                 ids |= porteurs
-                if len(ids) >= limite:
+                if len(ids) >= plafond:
                     break
-        return tuple(sorted(ids)[:limite])
+        return tuple(sorted(ids)[:plafond])
 
     def par_relation(self, relation: str) -> tuple[str, ...]:
         """Ids des arêtes d'une relation."""

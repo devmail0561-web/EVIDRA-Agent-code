@@ -15,7 +15,7 @@ import concurrent.futures
 import logging
 from collections.abc import Callable, Mapping
 from concurrent.futures import Future
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -26,6 +26,13 @@ from evidra.kernel.scheduler import Priorite
 _LOG = logging.getLogger(__name__)
 
 Effet = Callable[[], ToolResult]
+
+
+def _defaut_travailleur() -> float:
+    """Défaut canonique directive (I9), sans cycle d'import au chargement."""
+    from evidra.directive.schema import timeout_travailleur_defaut
+
+    return timeout_travailleur_defaut()
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +47,7 @@ class ContexteAPI:
     lire_etat: Callable[[], dict[str, Any]]
     lire_alertes: Callable[[], list[dict[str, Any]]]
     ctx_memoire: Context
+    timeout_travailleur_s: float = field(default_factory=_defaut_travailleur)
 
 
 def deposer_attendre(ctx: ContexteAPI, niveau: Priorite, effet: Effet) -> ToolResult:
@@ -95,11 +103,12 @@ def reponse(recu: ToolResult) -> tuple[int, dict[str, Any]]:
 
 
 def contexte_depuis_rapport(
-    rapport: Any, data_dir: Path, *, moteur: Any = None, timeout_s: float = 5.0
+    rapport: Any, data_dir: Path, *, moteur: Any = None, timeout_s: float | None = None
 ) -> ContexteAPI | None:
     """Construit le contexte API depuis un démarrage (fil HTTP : dépôt seul).
 
     Outils construits ici mais exécutés dans le fil scheduler (effets).
+    `timeout_s` explicite sinon `directive.api.timeout_s` (I9).
     `None` si boucle/magasin/directive absents (démarrage incomplet).
     """
     from evidra.engine_bridge.extract import extraire as extraire_pont
@@ -124,7 +133,7 @@ def contexte_depuis_rapport(
         if nom == "query_effects":
             return OutilEffets(memoires)
         if nom == "query_chain":
-            return OutilChaine(memoires)
+            return OutilChaine(memoires, timeout_s=travailleur_s)
         if nom == "validate":
             return OutilValider(memoires)
         if nom == "report":
@@ -133,11 +142,12 @@ def contexte_depuis_rapport(
             return getattr(rapport, "ingest", None)
         return None
 
+    travailleur_s = directive.budgets.timeout_travailleur_s
     extraire = None
     if moteur is not None:
 
         def extraire(textes: list[str]) -> ToolResult:
-            return extraire_pont(textes, moteur=moteur, timeout_s=30.0)
+            return extraire_pont(textes, moteur=moteur, timeout_s=travailleur_s)
 
     def lire_alertes() -> list[dict[str, Any]]:
         if registres is None:
@@ -147,7 +157,8 @@ def contexte_depuis_rapport(
     return ContexteAPI(
         deposer=boucle.deposer,
         domaine=directive.domain,
-        timeout_s=timeout_s,
+        timeout_s=timeout_s if timeout_s is not None else directive.api.timeout_s,
+        timeout_travailleur_s=travailleur_s,
         construire=construire,
         extraire=extraire,
         lire_etat=lambda: etat_racine(data_dir),

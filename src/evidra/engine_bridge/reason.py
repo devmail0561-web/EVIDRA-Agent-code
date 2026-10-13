@@ -80,10 +80,16 @@ def raisonner_chaine(
     *,
     etiquettes: Mapping[Any, str],
     budget: int = 16,
-    timeout_s: float = 30.0,
+    timeout_s: float | None = None,
     raison: Raisonneur | None = None,
 ) -> ToolResult:
-    """Chaîne causale entre deux labels ; panne ⇒ `failed`, jamais levée."""
+    """Chaîne causale entre deux labels ; panne ⇒ `failed`, jamais levée.
+
+    `timeout_s=None` ⇒ défaut canonique directive (`Budgets.timeout_travailleur_s`, I9).
+    """
+    from evidra.directive.schema import timeout_travailleur_defaut
+
+    delai = timeout_travailleur_defaut() if timeout_s is None else timeout_s
     if (
         graphe is None
         or not isinstance(de_label, str)
@@ -107,11 +113,11 @@ def raisonner_chaine(
                 payload={"trouve": False, "motif": f"moteur non importable : {exc}"},
             )
     try:
-        reponse = lancer(lambda: raison(de_label, vers_label, graphe, budget=budget), timeout_s)
+        reponse = lancer(lambda: raison(de_label, vers_label, graphe, budget=budget), delai)
     except WorkerTimeout:
         return ToolResult(
             status=Status.FAILED,
-            payload={"trouve": False, "motif": f"reason en timeout ({timeout_s}s)"},
+            payload={"trouve": False, "motif": f"reason en timeout ({delai}s)"},
         )
     except Exception as exc:  # noqa: BLE001 — toute panne moteur devient `failed`
         _LOG.exception("panne moteur reason")

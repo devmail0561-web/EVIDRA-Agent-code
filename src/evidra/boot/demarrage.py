@@ -68,7 +68,11 @@ def _horloge_defaut() -> str:
 def _seuils_outil(directive: Directive) -> Seuils:
     methode = directive.quality.min_extraction_method
     methodes = {methode} if isinstance(methode, str) else set(methode)
-    return Seuils(min_confiance=directive.quality.min_confidence, methodes=frozenset(methodes))
+    return Seuils(
+        min_confiance=directive.quality.min_confidence,
+        methodes=frozenset(methodes),
+        plafonds=dict(directive.channel_ceilings),
+    )
 
 
 def _table_alias(directive: Directive) -> dict[tuple[str, str], str]:
@@ -126,6 +130,8 @@ def _construire_alerte(
         tic,
         endpoint=surv.alert_endpoint,
         fenetre_s=surv.dedup_fenetre_s,
+        timeout_egress_s=surv.timeout_egress_s,
+        egress_hotes=list(directive.output.egress_hotes),
     )
 
 
@@ -193,7 +199,9 @@ def demarrer(
         phases["wal"] = _phase_wal(magasin)
         registres = Registres(magasin)
         phases["registres"] = _phase_registres(registres, tic)
-        phases["moteur"] = _phase_moteur(moteur, registres, prechauffer, motifs)
+        phases["moteur"] = _phase_moteur(
+            moteur, registres, prechauffer, motifs, directive.budgets.timeout_travailleur_s
+        )
         memoires = _memoires_domaines(magasin, directive)
         total_entites = sum(len(m.entites) for m in memoires.values())
         phases["domaines"] = {
@@ -285,7 +293,7 @@ def _phase_registres(registres: Registres, tic: Callable[[], str]) -> dict[str, 
 
 
 def _phase_moteur(
-    moteur: Any, registres: Registres, prechauffer: bool, motifs: list[str]
+    moteur: Any, registres: Registres, prechauffer: bool, motifs: list[str], timeout_s: float
 ) -> dict[str, Any]:
     modeles = registres.modeles()
     if modeles:
@@ -295,7 +303,7 @@ def _phase_moteur(
     rechauffe = False
     if prechauffer and moteur is not None and hasattr(moteur, "analyze_batch"):
         try:
-            lancer(lambda: moteur.analyze_batch(["phrase sentinelle."]), 60.0)
+            lancer(lambda: moteur.analyze_batch(["phrase sentinelle."]), timeout_s)
             rechauffe = True
         except Exception as exc:  # noqa: BLE001 — préchauffage best-effort, tracé
             _LOG.exception("préchauffage moteur manqué")
@@ -316,6 +324,7 @@ def _memoires_domaines(magasin: Magasin, directive: Directive) -> dict[str, Memo
         noms.append(directive.domain)
     seuils = (directive.quality.seuils_tiers[0], directive.quality.seuils_tiers[1])
     n_confirmee = directive.seuils_provisoires.n_confirmation
+    limite_repli = directive.quality.limite_repli_lexical
     memoires: dict[str, Memoire] = {}
     for nom in noms:
         cle = f"domains/{nom}"
@@ -324,9 +333,11 @@ def _memoires_domaines(magasin: Magasin, directive: Directive) -> dict[str, Memo
         except StoreError:
             charge = None
         if charge is None:
-            memoires[nom] = Memoire(nom, seuils, n_confirmee)
+            memoires[nom] = Memoire(nom, seuils, n_confirmee, limite_repli)
         else:
-            memoire, _ignores = memoire_depuis_etat(nom, charge.etat, seuils, n_confirmee)
+            memoire, _ignores = memoire_depuis_etat(
+                nom, charge.etat, seuils, n_confirmee, limite_repli
+            )
             memoires[nom] = memoire
     return memoires
 

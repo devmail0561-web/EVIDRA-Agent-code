@@ -42,8 +42,10 @@ alert = "evidra.tools.alert:OutilAlert"
 
 [project.entry-points."evidra_adapters"]
 # un entry-point par adaptateur — ex :
-# local_files = "evidra.adapters.local_files:LocalFilesAdapter"
+# local_files = "evidra.adapters.local_files:AdaptateurFichiers"
 local_files = "evidra.adapters.local_files:AdaptateurFichiers"
+agent_push = "evidra.adapters.agent_push:AdaptateurPush"
+http_feed = "evidra.adapters.http_feed:AdaptateurFlux"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/evidra"]

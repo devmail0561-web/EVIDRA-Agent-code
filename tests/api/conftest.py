@@ -14,4 +14,5 @@ import pytest
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     if getattr(config.option, "disable_socket", False):
         for item in items:
-            item.add_marker(pytest.mark.skip(reason="TestClient exige des sockets (hors I10)"))
+            if "tests/api/" in str(getattr(item, "fspath", "")) or "/api/" in item.nodeid:
+                item.add_marker(pytest.mark.skip(reason="TestClient exige des sockets (hors I10)"))

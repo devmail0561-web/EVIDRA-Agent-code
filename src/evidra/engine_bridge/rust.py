@@ -24,12 +24,18 @@ class RustIndisponible(Exception):  # noqa: N818 — vocabulaire SA (cf. T1.6)
 
 
 def interroger(
-    binaire: str, iri: dict[str, Any], requete: str, *, timeout_s: float = 30.0
+    binaire: str, iri: dict[str, Any], requete: str, *, timeout_s: float | None = None
 ) -> dict[str, Any]:
-    """Requête GCN-QL quelconque : réponse JSON validée (fail-closed)."""
+    """Requête GCN-QL quelconque : réponse JSON validée (fail-closed).
+
+    `timeout_s=None` ⇒ défaut canonique directive (`Budgets.timeout_travailleur_s`, I9).
+    """
+    from evidra.directive.schema import timeout_travailleur_defaut
+
+    delai = timeout_travailleur_defaut() if timeout_s is None else timeout_s
     if not isinstance(requete, str) or not requete.strip() or "\n" in requete:
         raise ValueError(f"requête invalide : {requete!r}")
-    if not isinstance(timeout_s, (int, float)) or timeout_s <= 0:
+    if not isinstance(delai, (int, float)) or delai <= 0:
         raise ValueError(f"timeout invalide : {timeout_s!r}")
     ir_path = Path("requete_ir.json")
     try:
@@ -38,7 +44,7 @@ def interroger(
             [binaire, "query", "--ir", str(ir_path), requete.strip()],
             capture_output=True,
             text=True,
-            timeout=float(timeout_s),
+            timeout=float(delai),
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise RustIndisponible(f"sous-processus gcn : {exc}") from None
@@ -63,9 +69,17 @@ def interroger(
 
 
 def interroger_chaine(
-    binaire: str, iri: dict[str, Any], de_label: str, vers_label: str, *, timeout_s: float = 30.0
+    binaire: str,
+    iri: dict[str, Any],
+    de_label: str,
+    vers_label: str,
+    *,
+    timeout_s: float | None = None,
 ) -> dict[str, Any]:
-    """`CHAIN a -> b?` : résultat (`found`/`links`/`ranked_paths`) validé."""
+    """`CHAIN a -> b?` : résultat (`found`/`links`/`ranked_paths`) validé.
+
+    `timeout_s=None` ⇒ défaut canonique directive (`Budgets.timeout_travailleur_s`, I9).
+    """
     for label in (de_label, vers_label):
         if not isinstance(label, str) or not label.strip() or "\n" in label:
             raise ValueError(f"label de requête invalide : {label!r}")

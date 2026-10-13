@@ -51,11 +51,17 @@ def verifier_lien(
     etiquettes: Mapping[Any, str],
     budget: int = 16,
     min_conf: float = 0.0,
-    timeout_s: float = 30.0,
+    timeout_s: float | None = None,
     raison: Callable[..., dict[str, Any]] | None = None,
     verificateur: Verificateur | None = None,
 ) -> ToolResult:
-    """Lien causal ? `trouve` + chemin + confiance + preuves citées."""
+    """Lien causal ? `trouve` + chemin + confiance + preuves citées.
+
+    `timeout_s=None` ⇒ défaut canonique directive (`Budgets.timeout_travailleur_s`, I9).
+    """
+    from evidra.directive.schema import timeout_travailleur_defaut
+
+    delai = timeout_travailleur_defaut() if timeout_s is None else timeout_s
     if (
         graphe is None
         or not isinstance(src_label, str)
@@ -76,11 +82,11 @@ def verifier_lien(
                 payload={"trouve": False, "motif": f"moteur non importable : {exc}"},
             )
     try:
-        reponse = lancer(lambda: raison(src_label, dst_label, graphe, budget=budget), timeout_s)
+        reponse = lancer(lambda: raison(src_label, dst_label, graphe, budget=budget), delai)
     except WorkerTimeout:
         return ToolResult(
             status=Status.FAILED,
-            payload={"trouve": False, "motif": f"validate en timeout ({timeout_s}s)"},
+            payload={"trouve": False, "motif": f"validate en timeout ({delai}s)"},
         )
     except Exception as exc:  # noqa: BLE001 — toute panne moteur devient `failed`
         _LOG.exception("panne moteur validate")

@@ -24,22 +24,30 @@ from evidra.kernel.contracts import Status, ToolResult
 _LOG = logging.getLogger(__name__)
 
 
-def extraire(documents: list[str], *, moteur: Moteur | None, timeout_s: float = 30.0) -> ToolResult:
-    """Extrait des CIRs ; entrée invalide ou panne moteur ⇒ `failed` (jamais levée)."""
+def extraire(
+    documents: list[str], *, moteur: Moteur | None, timeout_s: float | None = None
+) -> ToolResult:
+    """Extrait des CIRs ; entrée invalide ou panne moteur ⇒ `failed` (jamais levée).
+
+    `timeout_s=None` ⇒ défaut canonique directive (`Budgets.timeout_travailleur_s`, I9).
+    """
+    from evidra.directive.schema import timeout_travailleur_defaut
+
+    delai = timeout_travailleur_defaut() if timeout_s is None else timeout_s
     if not isinstance(documents, list):
         return _echec("documents : liste exigée")
     if not isinstance(moteur, Moteur):
         return _echec("moteur indisponible ou hors contrat")
-    if not isinstance(timeout_s, (int, float)) or timeout_s <= 0:
+    if not isinstance(delai, (int, float)) or delai <= 0:
         return _echec(f"timeout invalide : {timeout_s!r}")
     valides = [d for d in documents if isinstance(d, str) and d.strip()]
     ignores = len(documents) - len(valides)
     if not valides:
         return ToolResult(status=Status.OK, payload={"cirs": [], "ignores": ignores})
     try:
-        cirs = lancer(lambda: moteur.analyze_batch(copy.deepcopy(valides)), float(timeout_s))
+        cirs = lancer(lambda: moteur.analyze_batch(copy.deepcopy(valides)), float(delai))
     except WorkerTimeout:
-        return _echec(f"extraction en timeout ({timeout_s}s)")
+        return _echec(f"extraction en timeout ({delai}s)")
     except Exception as exc:  # noqa: BLE001 — toute panne moteur devient `failed`
         _LOG.exception("panne moteur extract")
         return _echec(f"panne moteur : {exc}")

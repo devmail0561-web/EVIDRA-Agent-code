@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from dataclasses import replace as dataclasses_replace
 from typing import Any
 
 from evidra.kernel.contracts import Context, CostHint, Record, Status, ToolResult, Verb
@@ -41,6 +42,7 @@ class Seuils:
 
     min_confiance: float
     methodes: frozenset[str]
+    plafonds: Mapping[str, float] | None = None  # canal → confiance max (T9.1)
 
 
 class OutilIngest:
@@ -60,6 +62,7 @@ class OutilIngest:
             "ajoutees": {"type": "integer"},
             "confirmees": {"type": "integer"},
             "idempotentes": {"type": "integer"},
+            "plafonnees": {"type": "integer"},
             "dropped": {"type": "object"},
             "trace_ref": {"type": ["integer", "null"]},
         },
@@ -104,16 +107,22 @@ class OutilIngest:
             )
         channel = args.get("channel", "")
         channel = channel if isinstance(channel, str) else ""
+        quarantaine = args.get("quarantaine")
+        quarantaine = quarantaine if isinstance(quarantaine, str) and quarantaine.strip() else None
         horodatage = self._horloge()
         flux = FLUX_DOMAINE.format(ctx.domain)
-        ajoutees = confirmees = idempotentes = 0
+        ajoutees = confirmees = idempotentes = plafonnees = 0
         dropped: dict[str, int] = {}
         trace: int | None = None
         contributions: dict[str, dict[str, int]] = {}
+        plafond = (self._seuils.plafonds or {}).get(channel, 1.0)
         for noyau in noyaux:
             if not isinstance(noyau, CirCore):
                 dropped["forme-invalide"] = dropped.get("forme-invalide", 0) + 1
                 continue
+            if noyau.confidence > plafond:
+                noyau = dataclasses_replace(noyau, confidence=plafond)
+                plafonnees += 1
             if noyau.confidence < self._seuils.min_confiance:
                 dropped["sous-seuil-confiance"] = dropped.get("sous-seuil-confiance", 0) + 1
                 continue
@@ -129,6 +138,7 @@ class OutilIngest:
                 fiabilite=fiabilite,
                 horodatage=horodatage,
                 alias=self._alias,
+                quarantaine=quarantaine,
             )
             if issue.sorte == "idempotente":
                 idempotentes += 1
@@ -161,6 +171,7 @@ class OutilIngest:
             "ajoutees": ajoutees,
             "confirmees": confirmees,
             "idempotentes": idempotentes,
+            "plafonnees": plafonnees,
             "dropped": dropped,
             "trace_ref": trace,
         }

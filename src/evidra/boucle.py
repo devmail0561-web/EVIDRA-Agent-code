@@ -20,6 +20,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
 from evidra.directive.reload import Surveillant
+from evidra.directive.schema import Surveillance
 from evidra.kernel.contracts import Record, Status, ToolResult
 from evidra.kernel.gate import Policy
 from evidra.kernel.scheduler import Budgets, Priorite, Recu, Scheduler
@@ -76,6 +77,7 @@ class Boucle:
         self._surveillant = surveillant
         self._horloge = horloge
         self._alerteur = alerteur
+        self._alertes_max: int | None = None
         self._politique = Policy()
         self._hash_directive = surveillant.empreinte_courante() if surveillant is not None else ""
         self._actifs: set[Priorite] = set()
@@ -117,7 +119,12 @@ class Boucle:
             rapport = self._ordonnanceur.tour()
             alertes: list[str] = []
             if self._surveillant is not None:
-                alertes.extend(self._surveillant.alertes[-5:])
+                maximum = (
+                    self._alertes_max
+                    if self._alertes_max is not None
+                    else Surveillance().alertes_rapport_max
+                )
+                alertes.extend(self._surveillant.alertes[-maximum:] if maximum > 0 else [])
             return RapportBoucle(
                 tick=rapport.tick,
                 recus=rapport.recus,
@@ -156,6 +163,7 @@ class Boucle:
             )
         )
         self._politique = directive.permissions.en_politique()
+        self._alertes_max = directive.monitoring.alertes_rapport_max
         if changee:
             self._hash_directive = gardien.empreinte_courante()
             flux = f"domains/{self._domaine}"

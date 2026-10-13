@@ -2,7 +2,7 @@
   "$defs": {
     "Actions": {
       "additionalProperties": false,
-      "description": "Actions autoris\u00e9es/interdites \u00e0 l'agent.",
+      "description": "Actions autorisées/interdites à l'agent.",
       "properties": {
         "allowed": {
           "items": {
@@ -24,7 +24,7 @@
     },
     "AgentPair": {
       "additionalProperties": false,
-      "description": "Agent pair autoris\u00e9 (autorit\u00e9 d'\u00e9criture, \u00a78.5).",
+      "description": "Agent pair autorisé (autorité d'écriture, §8.5).",
       "properties": {
         "agent_id": {
           "minLength": 1,
@@ -44,6 +44,12 @@
           "minimum": 0.0,
           "title": "Max Confidence Accepted",
           "type": "number"
+        },
+        "cle_id": {
+          "default": "",
+          "description": "clé HMAC (api.cles_directive), vide = rejet (T9.3)",
+          "title": "Cle Id",
+          "type": "string"
         }
       },
       "required": [
@@ -54,22 +60,29 @@
     },
     "ApiConfig": {
       "additionalProperties": false,
-      "description": "Exposition HTTP (T8.3) : vide = ouvert dev/dogfood (document\u00e9).",
+      "description": "Exposition HTTP (T8.3) : vide = ouvert dev/dogfood (documenté).",
       "properties": {
-        "cles_directive": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "cl\u00e9_id \u2192 secret HMAC (fichier 0600, jamais repo, T8.3)",
-          "title": "Cles Directive",
-          "type": "object"
-        },
         "jetons": {
           "items": {
             "$ref": "#/$defs/JetonApi"
           },
           "title": "Jetons",
           "type": "array"
+        },
+        "cles_directive": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "clé_id → secret HMAC (fichier 0600, jamais repo, T8.3)",
+          "title": "Cles Directive",
+          "type": "object"
+        },
+        "timeout_s": {
+          "default": 5.0,
+          "description": "attente réponse scheduler (T8.1)",
+          "exclusiveMinimum": 0.0,
+          "title": "Timeout S",
+          "type": "number"
         }
       },
       "title": "ApiConfig",
@@ -79,18 +92,11 @@
       "additionalProperties": false,
       "description": "Budgets par cycle (scheduler T1.5, directive T4.4).",
       "properties": {
-        "max_cycle_ms": {
-          "anyOf": [
-            {
-              "exclusiveMinimum": 0.0,
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Max Cycle Ms"
+        "max_tool_calls": {
+          "default": 6,
+          "minimum": 1,
+          "title": "Max Tool Calls",
+          "type": "integer"
         },
         "max_ingest_per_cycle": {
           "anyOf": [
@@ -105,11 +111,18 @@
           "default": null,
           "title": "Max Ingest Per Cycle"
         },
-        "max_tool_calls": {
-          "default": 6,
-          "minimum": 1,
-          "title": "Max Tool Calls",
-          "type": "integer"
+        "max_cycle_ms": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Cycle Ms"
         },
         "max_wal_bytes": {
           "anyOf": [
@@ -129,6 +142,13 @@
           "minimum": 0,
           "title": "Reserve Fond",
           "type": "integer"
+        },
+        "timeout_travailleur_s": {
+          "default": 30.0,
+          "description": "timeout workers extract/reason/Rust (T1.5)",
+          "exclusiveMinimum": 0.0,
+          "title": "Timeout Travailleur S",
+          "type": "number"
         }
       },
       "title": "Budgets",
@@ -136,17 +156,17 @@
     },
     "JetonApi": {
       "additionalProperties": false,
-      "description": "Jeton porteur : empreinte SHA-256 (jamais le secret), verbes li\u00e9s (T8.3).",
+      "description": "Jeton porteur : empreinte SHA-256 (jamais le secret), verbes liés (T8.3).",
       "properties": {
+        "nom": {
+          "minLength": 1,
+          "title": "Nom",
+          "type": "string"
+        },
         "empreinte": {
           "description": "hex SHA-256 du jeton",
           "minLength": 16,
           "title": "Empreinte",
-          "type": "string"
-        },
-        "nom": {
-          "minLength": 1,
-          "title": "Nom",
           "type": "string"
         },
         "verbes": {
@@ -166,13 +186,8 @@
     },
     "PermissionDirective": {
       "additionalProperties": false,
-      "description": "Une r\u00e8gle : outil (`*` = tous), verbe, p\u00e9rim\u00e8tre (`*` = tous).",
+      "description": "Une règle : outil (`*` = tous), verbe, périmètre (`*` = tous).",
       "properties": {
-        "scope": {
-          "minLength": 1,
-          "title": "Scope",
-          "type": "string"
-        },
         "tool": {
           "default": "*",
           "title": "Tool",
@@ -180,6 +195,11 @@
         },
         "verb": {
           "$ref": "#/$defs/Verb"
+        },
+        "scope": {
+          "minLength": 1,
+          "title": "Scope",
+          "type": "string"
         }
       },
       "required": [
@@ -213,21 +233,14 @@
     },
     "Provisoire": {
       "additionalProperties": false,
-      "description": "Constantes d'arbitrage \u2014 TOUTES `[provisoire]` (I9), calibration T10.3.",
+      "description": "Constantes d'arbitrage — TOUTES `[provisoire]` (I9), calibration T10.3.",
       "properties": {
-        "n_confirmation": {
-          "default": 3,
-          "description": "[provisoire] confirmations \u21d2 CONFIRM\u00c9E (T6.1)",
-          "minimum": 2,
-          "title": "N Confirmation",
-          "type": "integer"
-        },
-        "n_min_source": {
-          "default": 5,
-          "description": "[provisoire] plancher effectif fiabilit\u00e9 (T6.3)",
-          "minimum": 1,
-          "title": "N Min Source",
-          "type": "integer"
+        "t_domaine": {
+          "default": 30.0,
+          "description": "[provisoire] constante de temps (jours, demi-vie = T·ln2)",
+          "exclusiveMinimum": 0.0,
+          "title": "T Domaine",
+          "type": "number"
         },
         "nmax": {
           "anyOf": [
@@ -242,65 +255,72 @@
           "description": "[provisoire] saturation Nmax (norm_conf)",
           "title": "Nmax"
         },
-        "plafond_contradiction": {
-          "default": 0.05,
-          "description": "[provisoire] trusted si contradiction \u2264 (T6.3)",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Plafond Contradiction",
-          "type": "number"
-        },
-        "plancher_surveillee": {
-          "default": 0.6,
-          "description": "[provisoire] monitored d\u00e8s (T6.3)",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Plancher Surveillee",
-          "type": "number"
-        },
-        "poids_confirmation": {
-          "default": 0.7,
-          "description": "[provisoire] fiabilit\u00e9 source (T6.3)",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Poids Confirmation",
-          "type": "number"
-        },
-        "seuil_confiance_source": {
-          "default": 0.8,
-          "description": "[provisoire] trusted si \u2265 et contradiction \u2264 plafond",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Seuil Confiance Source",
-          "type": "number"
-        },
         "seuil_quorum": {
           "default": 2.0,
-          "description": "[provisoire] ratio > seuil \u21d2 l'ar\u00eate l'emporte",
+          "description": "[provisoire] ratio > seuil ⇒ l'arête l'emporte",
           "exclusiveMinimum": 1.0,
           "title": "Seuil Quorum",
           "type": "number"
         },
         "seuil_revision": {
           "default": 3.0,
-          "description": "[provisoire] ratio \u2264 seuil \u21d2 EN R\u00c9VISION (amendement)",
+          "description": "[provisoire] ratio ≤ seuil ⇒ EN RÉVISION (amendement)",
           "exclusiveMinimum": 1.0,
           "title": "Seuil Revision",
           "type": "number"
         },
+        "n_confirmation": {
+          "default": 3,
+          "description": "[provisoire] confirmations ⇒ CONFIRMÉE (T6.1)",
+          "minimum": 2,
+          "title": "N Confirmation",
+          "type": "integer"
+        },
+        "poids_confirmation": {
+          "default": 0.7,
+          "description": "[provisoire] fiabilité source (T6.3)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Poids Confirmation",
+          "type": "number"
+        },
+        "n_min_source": {
+          "default": 5,
+          "description": "[provisoire] plancher effectif fiabilité (T6.3)",
+          "minimum": 1,
+          "title": "N Min Source",
+          "type": "integer"
+        },
+        "seuil_confiance_source": {
+          "default": 0.8,
+          "description": "[provisoire] trusted si ≥ et contradiction ≤ plafond",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Seuil Confiance Source",
+          "type": "number"
+        },
+        "plafond_contradiction": {
+          "default": 0.05,
+          "description": "[provisoire] trusted si contradiction ≤ (T6.3)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Plafond Contradiction",
+          "type": "number"
+        },
         "seuil_suspect": {
           "default": 0.1,
-          "description": "[provisoire] contradiction > \u21d2 suspect (T6.3)",
+          "description": "[provisoire] contradiction > ⇒ suspect (T6.3)",
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "Seuil Suspect",
           "type": "number"
         },
-        "t_domaine": {
-          "default": 30.0,
-          "description": "[provisoire] constante de temps (jours, demi-vie = T\u00b7ln2)",
-          "exclusiveMinimum": 0.0,
-          "title": "T Domaine",
+        "plancher_surveillee": {
+          "default": 0.6,
+          "description": "[provisoire] monitored dès (T6.3)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Plancher Surveillee",
           "type": "number"
         }
       },
@@ -309,7 +329,7 @@
     },
     "Qualite": {
       "additionalProperties": false,
-      "description": "Seuils d'admission (ingest T3.6 ; mapping m\u00e9thode en T4.1+).",
+      "description": "Seuils d'admission (ingest T3.6 ; mapping méthode en T4.1+).",
       "properties": {
         "min_confidence": {
           "default": 0.7,
@@ -338,7 +358,7 @@
             0.85,
             0.65
           ],
-          "description": "[provisoire] tiers confiance index (high, medium), \u00e9tude \u00a77.2",
+          "description": "[provisoire] tiers confiance index (high, medium), étude §7.2",
           "maxItems": 2,
           "minItems": 2,
           "prefixItems": [
@@ -351,6 +371,13 @@
           ],
           "title": "Seuils Tiers",
           "type": "array"
+        },
+        "limite_repli_lexical": {
+          "default": 50,
+          "description": "borne du repli sous-chaîne (T2.5)",
+          "minimum": 1,
+          "title": "Limite Repli Lexical",
+          "type": "integer"
         }
       },
       "title": "Qualite",
@@ -358,22 +385,30 @@
     },
     "Sortie": {
       "additionalProperties": false,
-      "description": "Formats et destinations (egress r\u00e9seau = verbe contr\u00f4l\u00e9, T9.9).",
+      "description": "Formats et destinations (egress réseau = verbe contrôlé, T9.9).",
       "properties": {
-        "alert_endpoint": {
-          "default": "",
-          "title": "Alert Endpoint",
-          "type": "string"
-        },
         "default_format": {
           "default": "json",
           "title": "Default Format",
+          "type": "string"
+        },
+        "alert_endpoint": {
+          "default": "",
+          "title": "Alert Endpoint",
           "type": "string"
         },
         "report_schedule": {
           "default": "",
           "title": "Report Schedule",
           "type": "string"
+        },
+        "egress_hotes": {
+          "description": "T9.9 : hôtes autorisés en sortie (vide = aucun egress, fail-closed)",
+          "items": {
+            "type": "string"
+          },
+          "title": "Egress Hotes",
+          "type": "array"
         }
       },
       "title": "Sortie",
@@ -381,7 +416,7 @@
     },
     "Source": {
       "additionalProperties": false,
-      "description": "Source externe : adaptateur interchangeable + config (non hardcod\u00e9e).",
+      "description": "Source externe : adaptateur interchangeable + config (non hardcodée).",
       "properties": {
         "adapter": {
           "minLength": 1,
@@ -404,17 +439,31 @@
       "additionalProperties": false,
       "description": "Rythme de vieillissement du domaine (jours).",
       "properties": {
+        "stale_after_days": {
+          "default": 30.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Stale After Days",
+          "type": "number"
+        },
         "invalidate_after_days": {
           "default": 90.0,
           "exclusiveMinimum": 0.0,
           "title": "Invalidate After Days",
           "type": "number"
         },
-        "stale_after_days": {
-          "default": 30.0,
-          "exclusiveMinimum": 0.0,
-          "title": "Stale After Days",
-          "type": "number"
+        "retention_jours": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "T9.10 : purge des preuves après délai (None = conserver)",
+          "title": "Retention Jours"
         }
       },
       "title": "Staleness",
@@ -422,20 +471,23 @@
     },
     "Surveillance": {
       "additionalProperties": false,
-      "description": "Conditions du moniteur (phase 7 ; regex valid\u00e9es anti-ReDoS).",
+      "description": "Conditions du moniteur (phase 7 ; regex validées anti-ReDoS).",
       "properties": {
-        "alert_endpoint": {
-          "anyOf": [
-            {
+        "watch_cycles": {
+          "default": false,
+          "title": "Watch Cycles",
+          "type": "boolean"
+        },
+        "watch_gaps_in_chains": {
+          "description": "chaînes surveillées (nœuds, T7.3)",
+          "items": {
+            "items": {
               "type": "string"
             },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "egress optionnel des alertes (T7.2, hors ligne \u21d2 d\u00e9grad\u00e9)",
-          "title": "Alert Endpoint"
+            "type": "array"
+          },
+          "title": "Watch Gaps In Chains",
+          "type": "array"
         },
         "alert_on_new_relation_involving": {
           "items": {
@@ -446,34 +498,45 @@
         },
         "dedup_fenetre_s": {
           "default": 3600,
-          "description": "non r\u00e9\u00e9mission d'une alerte (T7.2)",
+          "description": "non réémission d'une alerte (T7.2)",
           "minimum": 0,
           "title": "Dedup Fenetre S",
           "type": "integer"
         },
+        "alert_endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "egress optionnel des alertes (T7.2, hors ligne ⇒ dégradé)",
+          "title": "Alert Endpoint"
+        },
         "seuil_invalidation": {
           "default": 0.8,
-          "description": "haute confiance invalid\u00e9e \u21d2 critique (T7.1)",
+          "description": "haute confiance invalidée ⇒ critique (T7.1)",
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "Seuil Invalidation",
           "type": "number"
         },
-        "watch_cycles": {
-          "default": false,
-          "title": "Watch Cycles",
-          "type": "boolean"
+        "timeout_egress_s": {
+          "default": 5.0,
+          "description": "timeout envoi alertes (T7.2, best-effort)",
+          "exclusiveMinimum": 0.0,
+          "title": "Timeout Egress S",
+          "type": "number"
         },
-        "watch_gaps_in_chains": {
-          "description": "cha\u00eenes surveill\u00e9es (n\u0153uds, T7.3)",
-          "items": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "title": "Watch Gaps In Chains",
-          "type": "array"
+        "alertes_rapport_max": {
+          "default": 5,
+          "description": "alertes retenues par reçu de boucle (T4.4)",
+          "minimum": 1,
+          "title": "Alertes Rapport Max",
+          "type": "integer"
         }
       },
       "title": "Surveillance",
@@ -493,15 +556,53 @@
     }
   },
   "additionalProperties": false,
-  "description": "Directive : mission compl\u00e8te d'un agent sur un domaine (\u00a79.3).",
+  "description": "Directive : mission complète d'un agent sur un domaine (§9.3).",
   "properties": {
-    "actions": {
-      "$ref": "#/$defs/Actions"
-    },
     "agent_id": {
       "minLength": 1,
       "title": "Agent Id",
       "type": "string"
+    },
+    "domain": {
+      "minLength": 1,
+      "title": "Domain",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/Source"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "quality": {
+      "$ref": "#/$defs/Qualite"
+    },
+    "staleness": {
+      "$ref": "#/$defs/Staleness"
+    },
+    "monitoring": {
+      "$ref": "#/$defs/Surveillance"
+    },
+    "actions": {
+      "$ref": "#/$defs/Actions"
+    },
+    "output": {
+      "$ref": "#/$defs/Sortie"
+    },
+    "budgets": {
+      "$ref": "#/$defs/Budgets"
+    },
+    "permissions": {
+      "$ref": "#/$defs/Permissions"
+    },
+    "channel_ceilings": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "[provisoire] plafonds par canal, confiances non calibrées (B1)",
+      "title": "Channel Ceilings",
+      "type": "object"
     },
     "aliases": {
       "additionalProperties": {
@@ -513,27 +614,23 @@
         },
         "type": "object"
       },
-      "description": "table d'alias par domaine (promotion humaine, \u00a719)",
+      "description": "table d'alias par domaine (promotion humaine, §19)",
       "title": "Aliases",
       "type": "object"
     },
-    "api": {
-      "$ref": "#/$defs/ApiConfig"
+    "seuils_provisoires": {
+      "$ref": "#/$defs/Provisoire"
     },
-    "budgets": {
-      "$ref": "#/$defs/Budgets"
-    },
-    "channel_ceilings": {
-      "additionalProperties": {
-        "type": "number"
-      },
-      "description": "[provisoire] plafonds par canal, confiances non calibr\u00e9es (B1)",
-      "title": "Channel Ceilings",
-      "type": "object"
+    "delegate": {
+      "const": "disabled",
+      "default": "disabled",
+      "description": "gate P3 : toute autre valeur refusée avant T10.7",
+      "title": "Delegate",
+      "type": "string"
     },
     "deduction": {
       "default": "disabled",
-      "description": "gate T6.6 : d\u00e9duction trac\u00e9e interdite par d\u00e9faut",
+      "description": "gate T6.6 : déduction tracée interdite par défaut",
       "enum": [
         "disabled",
         "enabled"
@@ -541,48 +638,11 @@
       "title": "Deduction",
       "type": "string"
     },
-    "delegate": {
-      "const": "disabled",
-      "default": "disabled",
-      "description": "gate P3 : toute autre valeur refus\u00e9e avant T10.7",
-      "title": "Delegate",
-      "type": "string"
-    },
-    "domain": {
-      "minLength": 1,
-      "title": "Domain",
-      "type": "string"
-    },
-    "monitoring": {
-      "$ref": "#/$defs/Surveillance"
-    },
-    "output": {
-      "$ref": "#/$defs/Sortie"
-    },
-    "permissions": {
-      "$ref": "#/$defs/Permissions"
-    },
-    "quality": {
-      "$ref": "#/$defs/Qualite"
-    },
     "semantic_index_min_edges": {
       "default": 500000,
       "exclusiveMinimum": 0,
       "title": "Semantic Index Min Edges",
       "type": "integer"
-    },
-    "seuils_provisoires": {
-      "$ref": "#/$defs/Provisoire"
-    },
-    "sources": {
-      "items": {
-        "$ref": "#/$defs/Source"
-      },
-      "title": "Sources",
-      "type": "array"
-    },
-    "staleness": {
-      "$ref": "#/$defs/Staleness"
     },
     "trusted_agents": {
       "items": {
@@ -590,6 +650,9 @@
       },
       "title": "Trusted Agents",
       "type": "array"
+    },
+    "api": {
+      "$ref": "#/$defs/ApiConfig"
     }
   },
   "required": [

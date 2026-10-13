@@ -138,3 +138,28 @@ def test_wal_rejoue_memoire_identique(tmp_path: Path) -> None:
         assert (
             rebuilt.entites[("code", "authentification", "cause", "acces")].confirmation_count == 2
         )
+
+
+def test_plafond_canal_t91() -> None:
+    import tempfile
+    from pathlib import Path
+
+    from evidra.kernel.contracts import Context, Verb
+    from evidra.kernel.gate import Policy, Rule
+    from evidra.memory.memoire import Memoire
+    from evidra.memory.store import Magasin
+    from evidra.tools.ingest import OutilIngest, Seuils
+
+    with Magasin(Path(tempfile.mkdtemp())) as magasin:
+        policy = Policy(allowed=frozenset({Rule("ingest", Verb.INGEST, "*")}))
+        seuils = Seuils(
+            min_confiance=0.0,
+            methodes=frozenset({"symbolic_rust"}),
+            plafonds={"http_feed": 0.5},
+        )
+        outil = OutilIngest({"code": Memoire("code")}, policy, seuils, lambda: "t")
+        ctx = Context(store=magasin, domain="code")
+        recu = outil.run(ctx, {"noyaux": [_noyau(conf=0.99)], "channel": "http_feed"})
+        assert recu.status.value == "ok"
+        assert recu.payload["plafonnees"] == 1
+        assert recu.payload["ajoutees"] == 1

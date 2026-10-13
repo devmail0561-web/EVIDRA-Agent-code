@@ -36,6 +36,8 @@ REGISTRE: dict[tuple[str, str], tuple[float | int, str, str]] = {
     ("tools.report", "LIMITE_SECTION"): (100, "provisoire", "présentation, surchargeable"),
     ("tools.query_gaps", "PROFONDEUR_CHAINE"): (1, "provisoire", "chaîne surveillée, défaut"),
     ("kernel.registry", "SEUIL_QUARANTAINE"): (3, "spec", "PLAN_SA T1.3, 3 échecs ⇒ quarantaine"),
+    ("security.signing", "FENETRE_S"): (300, "spec", "T9.2, fenêtre d'acceptation 5 min"),
+    ("adapters.http_feed", "_BACKOFF_PLAFOND_S"): (300, "provisoire", "T9.8, backoff plafond"),
 }
 
 STATUTS = frozenset({"version", "constate", "spec", "provisoire"})

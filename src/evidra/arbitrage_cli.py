@@ -271,7 +271,9 @@ def cmd_lacunes(args: argparse.Namespace) -> int:
             print(json.dumps({"erreur": str(exc)}, ensure_ascii=False), file=sys.stderr)
             return 1
         memo, ignores = memoire_depuis_etat(args.domaine, charge.etat)
-        outil = OutilLacunes({args.domaine: memo})
+        outil = OutilLacunes(
+            {args.domaine: memo}, timeout_s=directive.budgets.timeout_travailleur_s
+        )
         ctx = Context(store=magasin, domain=args.domaine)
         gaps_par_chaine: dict[str, list[str]] = {}
         injoignables = []

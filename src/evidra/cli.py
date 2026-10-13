@@ -108,6 +108,26 @@ def main(argv: list[str] | None = None) -> int:
     serve.add_argument("--port", type=int, default=8000)
     serve.set_defaults(fonction=cmd_serve)
 
+    quarantaine = sous.add_parser(
+        "quarantine", help="contenu quarantiné : list (lecture seule) | poser | lever (T9.5)"
+    )
+    quarantaine.add_argument("action", choices=("list", "poser", "lever"))
+    quarantaine.add_argument("--data-dir", required=True)
+    quarantaine.add_argument("--domaine", required=True)
+    quarantaine.add_argument("--source", required=False, default=None)
+    quarantaine.add_argument("--relation", required=False, default=None)
+    quarantaine.add_argument("--cible", required=False, default=None)
+    quarantaine.add_argument("--motif", required=False, default=None)
+    quarantaine.set_defaults(fonction=_cmd_quarantaine)
+
+    purger = sous.add_parser("purger", help="purge les preuves périmées (T9.10, verrouillé)")
+    purger.add_argument("--data-dir", required=True)
+    purger.add_argument("--domaine", required=True)
+    purger.add_argument("--directive", required=False, default=None)
+    purger.add_argument("--jours", type=int, required=False, default=None)
+    purger.add_argument("--maintenant", required=False, default=None)
+    purger.set_defaults(fonction=cmd_purger)
+
     args = parser.parse_args(argv)
     try:
         return int(args.fonction(args))
@@ -135,6 +155,79 @@ def _cmd_lacunes(args: argparse.Namespace) -> int:
     from evidra.arbitrage_cli import cmd_lacunes
 
     return cmd_lacunes(args)
+
+
+def _cmd_quarantaine(args: argparse.Namespace) -> int:
+    from evidra.quarantine_cli import cmd_quarantaine
+
+    return cmd_quarantaine(args)
+
+
+def cmd_purger(args: argparse.Namespace) -> int:
+    """Purge T9.10 : tombstone des preuves périmées + registre des suppressions."""
+    from datetime import UTC, datetime
+
+    from evidra.directive.loader import charger
+    from evidra.kernel.contracts import Record
+    from evidra.memory.memoire import id_triplet, memoire_depuis_etat
+    from evidra.memory.retention import candidates
+    from evidra.memory.store import Magasin, StoreError
+
+    jours = args.jours
+    if jours is None and args.directive:
+        try:
+            jours = charger(Path(args.directive)).staleness.retention_jours
+        except Exception as exc:
+            print(json.dumps({"erreur": f"directive illisible : {exc}"}), file=sys.stderr)
+            return 1
+    if jours is None:
+        print(json.dumps({"purgees": [], "motif": "sans politique de rétention, rien à purger"}))
+        return 0
+    maintenant = args.maintenant or datetime.now(UTC).isoformat()
+    try:
+        magasin = Magasin(Path(args.data_dir))
+    except StoreError as exc:
+        print(json.dumps({"erreur": f"purge impossible : {exc}"}), file=sys.stderr)
+        return 1
+    try:
+        cle = f"domains/{args.domaine}"
+        try:
+            charge = magasin.recharger(cle)
+        except StoreError as exc:
+            print(json.dumps({"erreur": str(exc)}), file=sys.stderr)
+            return 1
+        memo, _ = memoire_depuis_etat(args.domaine, charge.etat)
+        ciblees = candidates(memo.entites, maintenant_iso=maintenant, retention_jours=jours)
+        purgees = []
+        for triplet in ciblees:
+            env = memo.entites.get(triplet)
+            if env is None:
+                continue
+            motif = f"rétention dépassée ({jours} j, preuve illisible après purge)"
+            magasin.append(
+                cle,
+                Record(
+                    stream=cle,
+                    op="tombstone",
+                    key=id_triplet(triplet),
+                    data={"triplet": list(triplet), "motif": motif},
+                ),
+            )
+            memo.retirer(triplet)
+            magasin.append(
+                "registry/suppressions",
+                Record(
+                    stream="registry/suppressions",
+                    op="put",
+                    key=id_triplet(triplet),
+                    data={"triplet": list(triplet), "motif": motif, "date": maintenant},
+                ),
+            )
+            purgees.append(list(triplet))
+        print(json.dumps({"domaine": args.domaine, "purgees": purgees}, ensure_ascii=False))
+        return 0
+    finally:
+        magasin.close()
 
 
 def _moteur_essai_ou_rien(essai: bool):
@@ -226,6 +319,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
             adaptateur = AdaptateurFichiers(chemin)
         ctx = Context(store=rapport.magasin, domain=rapport.directive.domain)
         total = {"documents": 0, "ajoutees": 0, "confirmees": 0}
+        delai = rapport.directive.budgets.timeout_travailleur_s
         for doc in adaptateur.poll(None):
             stats = traiter_document(
                 adaptateur=adaptateur,
@@ -236,6 +330,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
                 texte=doc.text,
                 code=doc.uri.endswith(".py"),
                 fichier=doc.uri,
+                timeout_s=delai,
             )
             total["documents"] += 1
             total["ajoutees"] += stats["ajoutees"]
