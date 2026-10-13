@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: devmail0561-web/gcn_engine
-          ref: 20163daea57c0da065e22aa2cdb179ab69ba194a
+          ref: 2778fb4f037c93dafaa101ff8d8f695492d4a158
           path: projet_CNM
 
       - name: Installer uv

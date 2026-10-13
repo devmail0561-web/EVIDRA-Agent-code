@@ -6,8 +6,8 @@
 |---|---|
 | Sources | `../projet_CNM/gcn-python` (dépendance `path` éditable du `pyproject.toml`) |
 | Version package | `gcn-python 4.0.0` (`__version__`) |
-| Commit workspace | `20163daea57c0da065e22aa2cdb179ab69ba194a` |
-| Branche workspace | `refacto/arch-cible-refacto-2026-10` (109 commits devant `master`, non mergée) |
+| Commit workspace | `2778fb4f037c93dafaa101ff8d8f695492d4a158` |
+| Branche workspace | `refacto/arch-cible-refacto-2026-10` (non mergée, poussée le 2026-10-13) |
 | Python | 3.11.9 (moteur exige ≥ 3.10, SA exige ≥ 3.11) |
 
 ## Surface d'import résolue (liste blanche I1)
