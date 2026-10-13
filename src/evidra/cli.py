@@ -255,6 +255,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     )
     boucle = rapport.boucle
     assert boucle is not None and rapport.magasin is not None
+    arret = threading.Event()
+
+    def _stop(signum: int, _cadre: object) -> None:
+        arret.set()
+
+    # Handlers AVANT le marqueur : `pret` signifie prêt-pour-signaux, sinon un
+    # SIGTERM dans la fenêtre tue le processus (disposition par défaut, -15).
+    signal.signal(signal.SIGINT, _stop)
+    signal.signal(signal.SIGTERM, _stop)
     print(
         json.dumps(
             {
@@ -266,13 +275,6 @@ def cmd_run(args: argparse.Namespace) -> int:
         ),
         flush=True,
     )
-    arret = threading.Event()
-
-    def _stop(signum: int, _cadre: object) -> None:
-        arret.set()
-
-    signal.signal(signal.SIGINT, _stop)
-    signal.signal(signal.SIGTERM, _stop)
     try:
         boucle.boucler(arret)
     finally:
