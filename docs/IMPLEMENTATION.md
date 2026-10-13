@@ -20,7 +20,7 @@
 | 9 — Sécurité/réseau | J9 ✅ | T9.1–T9.10 | Clos : plafonds, signatures, agent_push, détecteurs, quarantaine, corpus adversarial, http_feed, egress, rétention |
 | 10 | — | — | Non commencée (gatée B1–B4) |
 
-Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **458 tests**, tous verts.
+Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **460 tests**, tous verts.
 
 ## 2. Architecture réelle
 
@@ -271,3 +271,9 @@ Règle appliquée : aucun réglage de pilotage en littéral — source unique = 
 - **Tests** : saturée ⇒ degrade immédiat sans dépôt + compteur libéré au tick ; défaut == canonique directive.
 - **Écarté** : `evidra etat` branché sur `etat.py` — lecture hors-ligne incompatible avec le verrou `Magasin` (refus si l'agent tourne) ; l'API `/status` + `evidra status` couvrent le besoin. `etat.py` reste le verbe en-processus (T5.9).
 - Compteur : **458 tests**, noyau 499/500, offline 445 + 13 skipped.
+
+## 25. ADR-0014 — frontière `memory/` tranchée (point reporté soldé)
+
+- Le plan §5 interdisait tout import `memory/` aux outils/adaptateurs ; constat : 9/9 outils lisent `memoire` (injectées, jamais de `store` direct — vérifié : aucun import `memory.store`/`Magasin` dans `tools/`), 3/3 adaptateurs n'importent qu'`envelope` (spans/CIR exigés par T3.2/T9.3).
+- Décision (amende §5, garde `tests/unit/test_frontiere_adapters.py`) : `envelope` partout (types purs) ; `memoire` aux outils en lecture injectée ; écritures via `ctx.store` seul (I3). Première rédaction de l'ADR contenait une clause fausse (adaptateurs « sans aucun import ») — réécrite après `grep` de vérification.
+- Compteur : **460 tests**. Dernier point reporté actionable soldé ; restent : nommage FR/EN (cosmétique), pin moteur non mergé (externe), T10.2+ (gatés B1–B3).
