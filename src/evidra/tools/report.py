@@ -22,8 +22,6 @@ from evidra.memory.envelope import Statut
 from evidra.memory.memoire import Memoire
 from evidra.util import borner, garde
 
-LIMITE_SECTION = 100
-
 _LOG = logging.getLogger(__name__)
 
 
@@ -51,8 +49,11 @@ class OutilRapport:
     channels: tuple[str, ...] = ("*",)
     requires_network = False
 
-    def __init__(self, memoires: dict[str, Memoire]) -> None:
+    def __init__(self, memoires: dict[str, Memoire], limite_section: int | None = None) -> None:
+        from evidra.directive.schema import limite_section_defaut
+
         self._memoires = memoires
+        self._limite = limite_section_defaut() if limite_section is None else limite_section
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Rapport reproductible ; entrée invalide ⇒ `failed`, jamais levée."""
@@ -121,7 +122,7 @@ class OutilRapport:
                 )
         for cle in ("nouvelles", "conflits", "stales"):
             retenues, tronque = borner(
-                sections[cle], LIMITE_SECTION, score=lambda f: float(f["confirmations"])
+                sections[cle], self._limite, score=lambda f: float(f["confirmations"])
             )
             sections[cle] = {"items": retenues, "tronque": tronque}
         payload: dict[str, Any] = {"scope": scope, "sections": sections}

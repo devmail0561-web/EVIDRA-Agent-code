@@ -23,6 +23,9 @@ from evidra.logging import DirectiveError
 
 _CONFIG = ConfigDict(extra="forbid")
 
+LONGUEUR_REGEX_MAX = 200
+"""Borne anti-ReDoS des motifs de surveillance ([provisoire], T7.1)."""
+
 
 class _Base(BaseModel):
     model_config = _CONFIG
@@ -37,7 +40,25 @@ class Budgets(_Base):
     max_wal_bytes: int | None = Field(default=None, gt=0)
     reserve_fond: int = Field(default=1, ge=0)
     timeout_travailleur_s: float = Field(
-        default=30.0, gt=0.0, description="timeout workers extract/reason/Rust (T1.5)"
+        default=30.0, gt=0.0, description="[provisoire] timeout workers extract/reason/Rust (T1.5)"
+    )
+    timeout_http_s: float = Field(
+        default=5.0, gt=0.0, description="[provisoire] timeout requêtes HTTP flux (T9.8)"
+    )
+    backoff_plafond_s: float = Field(
+        default=300.0, gt=0.0, description="[provisoire] plafond du backoff flux (T9.8)"
+    )
+    attente_boucle_s: float = Field(
+        default=0.05, gt=0.0, description="[provisoire] attente entre ticks à vide (T4.4)"
+    )
+    fsync_batch_lignes: int = Field(
+        default=100, ge=1, description="[provisoire] fsync WAL toutes les N lignes (T2.1)"
+    )
+    fsync_batch_ms: float = Field(
+        default=1000.0, gt=0.0, description="[provisoire] fsync WAL au plus tous les N ms (T2.1)"
+    )
+    cache_taille_max: int = Field(
+        default=1024, ge=1, description="[provisoire] entrées max du cache requêtes LRU (T5.6)"
     )
 
 
@@ -66,8 +87,12 @@ class Permissions(_Base):
 class Staleness(_Base):
     """Rythme de vieillissement du domaine (jours)."""
 
-    stale_after_days: float = Field(default=30.0, gt=0.0)
-    invalidate_after_days: float = Field(default=90.0, gt=0.0)
+    stale_after_days: float = Field(
+        default=30.0, gt=0.0, description="[provisoire] STALE après N jours (étude : CTI 30 j)"
+    )
+    invalidate_after_days: float = Field(
+        default=90.0, gt=0.0, description="[provisoire] INVALIDÉE après N jours sans re-confirm."
+    )
     retention_jours: int | None = Field(
         default=None, ge=1, description="T9.10 : purge des preuves après délai (None = conserver)"
     )
@@ -130,14 +155,18 @@ class Source(_Base):
 class Qualite(_Base):
     """Seuils d'admission (ingest T3.6 ; mapping méthode en T4.1+)."""
 
-    min_confidence: float = Field(default=0.70, ge=0.0, le=1.0)
-    min_extraction_method: str | list[str] = "symbolic_rust"
+    min_confidence: float = Field(
+        default=0.70, ge=0.0, le=1.0, description="seuil d'admission (étude §7 : 0.70)"
+    )
+    min_extraction_method: str | list[str] = Field(
+        default="symbolic_rust", description="méthode exigée (vocabulaire moteur constaté)"
+    )
     seuils_tiers: tuple[float, float] = Field(
         default=(0.85, 0.65),
         description="[provisoire] tiers confiance index (high, medium), étude §7.2",
     )
     limite_repli_lexical: int = Field(
-        default=50, ge=1, description="borne du repli sous-chaîne (T2.5)"
+        default=50, ge=1, description="[provisoire] borne du repli sous-chaîne (T2.5)"
     )
 
     @field_validator("seuils_tiers")
@@ -190,6 +219,46 @@ def timeout_api_defaut() -> float:
     return float(ApiConfig.model_fields["timeout_s"].default)
 
 
+def timeout_http_defaut() -> float:
+    """Timeout canonique requêtes HTTP flux (source unique : `Budgets`, I9)."""
+    return float(Budgets.model_fields["timeout_http_s"].default)
+
+
+def backoff_plafond_defaut() -> float:
+    """Plafond canonique du backoff flux (source unique : `Budgets`, I9)."""
+    return float(Budgets.model_fields["backoff_plafond_s"].default)
+
+
+def attente_boucle_defaut() -> float:
+    """Attente canonique entre ticks à vide (source unique : `Budgets`, I9)."""
+    return float(Budgets.model_fields["attente_boucle_s"].default)
+
+
+def fsync_batch_lignes_defaut() -> int:
+    """Lignes canoniques entre fsync WAL (source unique : `Budgets`, I9)."""
+    return int(Budgets.model_fields["fsync_batch_lignes"].default)
+
+
+def fsync_batch_ms_defaut() -> float:
+    """Délai canonique entre fsync WAL (source unique : `Budgets`, I9)."""
+    return float(Budgets.model_fields["fsync_batch_ms"].default)
+
+
+def cache_taille_max_defaut() -> int:
+    """Taille canonique du cache LRU (source unique : `Budgets`, I9)."""
+    return int(Budgets.model_fields["cache_taille_max"].default)
+
+
+def profondeur_gaps_defaut() -> int:
+    """Profondeur canonique des lacunes (source unique : `Surveillance`, I9)."""
+    return int(Surveillance.model_fields["profondeur_gaps"].default)
+
+
+def limite_section_defaut() -> int:
+    """Limite canonique de section de rapport (source unique : `Sortie`, I9)."""
+    return int(Sortie.model_fields["limite_section"].default)
+
+
 class Surveillance(_Base):
     """Conditions du moniteur (phase 7 ; regex validées anti-ReDoS)."""
 
@@ -199,19 +268,25 @@ class Surveillance(_Base):
     )
     alert_on_new_relation_involving: list[str] = Field(default_factory=list)
     dedup_fenetre_s: int = Field(
-        default=3600, ge=0, description="non réémission d'une alerte (T7.2)"
+        default=3600, ge=0, description="[provisoire] non réémission d'une alerte (T7.2)"
     )
     alert_endpoint: str | None = Field(
         default=None, description="egress optionnel des alertes (T7.2, hors ligne ⇒ dégradé)"
     )
     seuil_invalidation: float = Field(
-        default=0.80, ge=0.0, le=1.0, description="haute confiance invalidée ⇒ critique (T7.1)"
+        default=0.80,
+        ge=0.0,
+        le=1.0,
+        description="[provisoire] haute confiance invalidée ⇒ critique (T7.1)",
     )
     timeout_egress_s: float = Field(
-        default=5.0, gt=0.0, description="timeout envoi alertes (T7.2, best-effort)"
+        default=5.0, gt=0.0, description="[provisoire] timeout envoi alertes (T7.2, best-effort)"
     )
     alertes_rapport_max: int = Field(
-        default=5, ge=1, description="alertes retenues par reçu de boucle (T4.4)"
+        default=5, ge=1, description="[provisoire] alertes retenues par reçu de boucle (T4.4)"
+    )
+    profondeur_gaps: int = Field(
+        default=1, ge=1, description="[provisoire] profondeur BFS des lacunes (T7.3)"
     )
 
     @field_validator("alert_on_new_relation_involving")
@@ -222,8 +297,8 @@ class Surveillance(_Base):
                 re.compile(motif)
             except re.error:
                 raise ValueError(f"regex invalide : {motif!r}") from None
-            if len(motif) > 200:
-                raise ValueError(f"regex trop longue : {motif!r}")
+            if len(motif) > LONGUEUR_REGEX_MAX:
+                raise ValueError(f"regex trop longue : {motif!r}") from None
         return motifs
 
 
@@ -244,6 +319,9 @@ class Sortie(_Base):
         default_factory=list,
         description="T9.9 : hôtes autorisés en sortie (vide = aucun egress, fail-closed)",
     )
+    limite_section: int = Field(
+        default=100, ge=1, description="[provisoire] faits par section de rapport (T5.8)"
+    )
 
 
 class AgentPair(_Base):
@@ -251,7 +329,9 @@ class AgentPair(_Base):
 
     agent_id: str = Field(min_length=1)
     domains: list[str] = Field(default_factory=list)
-    max_confidence_accepted: float = Field(default=1.0, ge=0.0, le=1.0)
+    max_confidence_accepted: float = Field(
+        default=1.0, ge=0.0, le=1.0, description="plafond accepté (neutre 1.0 = aucun, T9.3)"
+    )
     cle_id: str = Field(
         default="", description="clé HMAC (api.cles_directive), vide = rejet (T9.3)"
     )
@@ -273,7 +353,9 @@ class ApiConfig(_Base):
         default_factory=dict,
         description="clé_id → secret HMAC (fichier 0600, jamais repo, T8.3)",
     )
-    timeout_s: float = Field(default=5.0, gt=0.0, description="attente réponse scheduler (T8.1)")
+    timeout_s: float = Field(
+        default=5.0, gt=0.0, description="[provisoire] attente réponse scheduler (T8.1)"
+    )
 
 
 class Directive(_Base):

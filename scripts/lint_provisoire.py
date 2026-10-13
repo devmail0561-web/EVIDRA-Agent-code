@@ -33,11 +33,11 @@ REGISTRE: dict[tuple[str, str], tuple[float | int, str, str]] = {
     ("memory.sous_graphe", "PROFONDEUR_DEFAUT"): (2, "spec", "PLAN_SA T3.4, profondeur ≤ 2"),
     ("memory.sous_graphe", "MAX_NOEUDS"): (500, "constate", "oversize moteur > 500 nœuds"),
     ("memory.sous_graphe", "MAX_ARETES"): (2000, "constate", "oversize moteur > 2000 arêtes"),
-    ("tools.report", "LIMITE_SECTION"): (100, "provisoire", "présentation, surchargeable"),
-    ("tools.query_gaps", "PROFONDEUR_CHAINE"): (1, "provisoire", "chaîne surveillée, défaut"),
     ("kernel.registry", "SEUIL_QUARANTAINE"): (3, "spec", "PLAN_SA T1.3, 3 échecs ⇒ quarantaine"),
-    ("security.signing", "FENETRE_S"): (300, "spec", "T9.2, fenêtre d'acceptation 5 min"),
-    ("adapters.http_feed", "_BACKOFF_PLAFOND_S"): (300, "provisoire", "T9.8, backoff plafond"),
+    ("security.signing", "FENETRE_S"): (300, "spec", "T9.2, fenêtre 5 min"),
+    ("cli", "BUDGET_DEFAUT_LACUNES"): (10.0, "provisoire", "budget tâches P4, arg --budget"),
+    ("arbitrage_cli", "DELAI_DEFAUT_LACUNES_J"): (7, "provisoire", "échéance tâches P4"),
+    ("directive.schema", "LONGUEUR_REGEX_MAX"): (200, "provisoire", "borne anti-ReDoS (T7.1)"),
 }
 
 STATUTS = frozenset({"version", "constate", "spec", "provisoire"})

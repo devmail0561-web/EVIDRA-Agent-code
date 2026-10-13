@@ -76,7 +76,7 @@ def vieillir(enveloppe: Envelope, *, maintenant_iso: str, stale_after_days: floa
     try:
         derniere = datetime.fromisoformat(enveloppe.last_confirmed_at)
         maintenant = datetime.fromisoformat(maintenant_iso)
-        depassee = (maintenant - derniere).total_seconds() > stale_after_days * 86400.0
+        depassee = (maintenant - derniere).total_seconds() > stale_after_days * 86400.0  # s/jour
     except (TypeError, ValueError):
         return None
     if not depassee:

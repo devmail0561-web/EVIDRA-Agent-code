@@ -24,6 +24,9 @@ from evidra.memory.memoire import Memoire, id_triplet, memoire_depuis_etat
 from evidra.memory.sources import Compteurs, SeuilsSources, fiabilite
 from evidra.memory.store import Magasin, StoreError
 
+DELAI_DEFAUT_LACUNES_J = 7
+"""Échéance par défaut des tâches P4 créées par `evidra lacunes` ([provisoire], I9)."""
+
 
 def seuils_sources_directive(directive: Any) -> SeuilsSources:
     """Seuils effectifs depuis `seuils_provisoires` (source unique : schéma)."""
@@ -272,7 +275,9 @@ def cmd_lacunes(args: argparse.Namespace) -> int:
             return 1
         memo, ignores = memoire_depuis_etat(args.domaine, charge.etat)
         outil = OutilLacunes(
-            {args.domaine: memo}, timeout_s=directive.budgets.timeout_travailleur_s
+            {args.domaine: memo},
+            timeout_s=directive.budgets.timeout_travailleur_s,
+            profondeur=directive.monitoring.profondeur_gaps,
         )
         ctx = Context(store=magasin, domain=args.domaine)
         gaps_par_chaine: dict[str, list[str]] = {}
@@ -287,7 +292,10 @@ def cmd_lacunes(args: argparse.Namespace) -> int:
                 injoignables.append({"chaine": chaine, "motif": recu.payload.get("motif", "")})
         questions = planifier(chaines, gaps_par_chaine)
         registres = Registres(magasin)
-        deadline = args.deadline or (datetime.now(UTC) + timedelta(days=7)).isoformat()
+        deadline = (
+            args.deadline
+            or (datetime.now(UTC) + timedelta(days=DELAI_DEFAUT_LACUNES_J)).isoformat()
+        )
         crees = 0
         for rang, question in enumerate(questions):
             if not question.prioritaire:

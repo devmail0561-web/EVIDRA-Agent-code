@@ -104,7 +104,7 @@ def creer_app(
             yield
         finally:
             arret.set()
-            fil.join(timeout=5.0)
+            fil.join(timeout=ctx.timeout_s)
 
     app = FastAPI(title="Evidra", version="1.0", lifespan=duree_vie)
     app.state.ctx = ctx

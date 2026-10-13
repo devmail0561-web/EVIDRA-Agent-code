@@ -17,7 +17,7 @@ import hmac
 from datetime import datetime
 from typing import Any
 
-ALGO = "hmac-sha256"
+ALGO = "hmac-sha256"  # spec T9.2/ADR-0009 : mono-opérateur (Ed25519 au 2e opérateur)
 ALGOS_AUTORISES = frozenset({ALGO})
 FENETRE_S = 300
 

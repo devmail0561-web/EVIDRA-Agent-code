@@ -40,6 +40,7 @@
         },
         "max_confidence_accepted": {
           "default": 1.0,
+          "description": "plafond accepté (neutre 1.0 = aucun, T9.3)",
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "Max Confidence Accepted",
@@ -79,7 +80,7 @@
         },
         "timeout_s": {
           "default": 5.0,
-          "description": "attente réponse scheduler (T8.1)",
+          "description": "[provisoire] attente réponse scheduler (T8.1)",
           "exclusiveMinimum": 0.0,
           "title": "Timeout S",
           "type": "number"
@@ -145,10 +146,52 @@
         },
         "timeout_travailleur_s": {
           "default": 30.0,
-          "description": "timeout workers extract/reason/Rust (T1.5)",
+          "description": "[provisoire] timeout workers extract/reason/Rust (T1.5)",
           "exclusiveMinimum": 0.0,
           "title": "Timeout Travailleur S",
           "type": "number"
+        },
+        "timeout_http_s": {
+          "default": 5.0,
+          "description": "[provisoire] timeout requêtes HTTP flux (T9.8)",
+          "exclusiveMinimum": 0.0,
+          "title": "Timeout Http S",
+          "type": "number"
+        },
+        "backoff_plafond_s": {
+          "default": 300.0,
+          "description": "[provisoire] plafond du backoff flux (T9.8)",
+          "exclusiveMinimum": 0.0,
+          "title": "Backoff Plafond S",
+          "type": "number"
+        },
+        "attente_boucle_s": {
+          "default": 0.05,
+          "description": "[provisoire] attente entre ticks à vide (T4.4)",
+          "exclusiveMinimum": 0.0,
+          "title": "Attente Boucle S",
+          "type": "number"
+        },
+        "fsync_batch_lignes": {
+          "default": 100,
+          "description": "[provisoire] fsync WAL toutes les N lignes (T2.1)",
+          "minimum": 1,
+          "title": "Fsync Batch Lignes",
+          "type": "integer"
+        },
+        "fsync_batch_ms": {
+          "default": 1000.0,
+          "description": "[provisoire] fsync WAL au plus tous les N ms (T2.1)",
+          "exclusiveMinimum": 0.0,
+          "title": "Fsync Batch Ms",
+          "type": "number"
+        },
+        "cache_taille_max": {
+          "default": 1024,
+          "description": "[provisoire] entrées max du cache requêtes LRU (T5.6)",
+          "minimum": 1,
+          "title": "Cache Taille Max",
+          "type": "integer"
         }
       },
       "title": "Budgets",
@@ -333,6 +376,7 @@
       "properties": {
         "min_confidence": {
           "default": 0.7,
+          "description": "seuil d'admission (étude §7 : 0.70)",
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "Min Confidence",
@@ -351,6 +395,7 @@
             }
           ],
           "default": "symbolic_rust",
+          "description": "méthode exigée (vocabulaire moteur constaté)",
           "title": "Min Extraction Method"
         },
         "seuils_tiers": {
@@ -374,7 +419,7 @@
         },
         "limite_repli_lexical": {
           "default": 50,
-          "description": "borne du repli sous-chaîne (T2.5)",
+          "description": "[provisoire] borne du repli sous-chaîne (T2.5)",
           "minimum": 1,
           "title": "Limite Repli Lexical",
           "type": "integer"
@@ -409,6 +454,13 @@
           },
           "title": "Egress Hotes",
           "type": "array"
+        },
+        "limite_section": {
+          "default": 100,
+          "description": "[provisoire] faits par section de rapport (T5.8)",
+          "minimum": 1,
+          "title": "Limite Section",
+          "type": "integer"
         }
       },
       "title": "Sortie",
@@ -441,12 +493,14 @@
       "properties": {
         "stale_after_days": {
           "default": 30.0,
+          "description": "[provisoire] STALE après N jours (étude : CTI 30 j)",
           "exclusiveMinimum": 0.0,
           "title": "Stale After Days",
           "type": "number"
         },
         "invalidate_after_days": {
           "default": 90.0,
+          "description": "[provisoire] INVALIDÉE après N jours sans re-confirm.",
           "exclusiveMinimum": 0.0,
           "title": "Invalidate After Days",
           "type": "number"
@@ -498,7 +552,7 @@
         },
         "dedup_fenetre_s": {
           "default": 3600,
-          "description": "non réémission d'une alerte (T7.2)",
+          "description": "[provisoire] non réémission d'une alerte (T7.2)",
           "minimum": 0,
           "title": "Dedup Fenetre S",
           "type": "integer"
@@ -518,7 +572,7 @@
         },
         "seuil_invalidation": {
           "default": 0.8,
-          "description": "haute confiance invalidée ⇒ critique (T7.1)",
+          "description": "[provisoire] haute confiance invalidée ⇒ critique (T7.1)",
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "Seuil Invalidation",
@@ -526,16 +580,23 @@
         },
         "timeout_egress_s": {
           "default": 5.0,
-          "description": "timeout envoi alertes (T7.2, best-effort)",
+          "description": "[provisoire] timeout envoi alertes (T7.2, best-effort)",
           "exclusiveMinimum": 0.0,
           "title": "Timeout Egress S",
           "type": "number"
         },
         "alertes_rapport_max": {
           "default": 5,
-          "description": "alertes retenues par reçu de boucle (T4.4)",
+          "description": "[provisoire] alertes retenues par reçu de boucle (T4.4)",
           "minimum": 1,
           "title": "Alertes Rapport Max",
+          "type": "integer"
+        },
+        "profondeur_gaps": {
+          "default": 1,
+          "description": "[provisoire] profondeur BFS des lacunes (T7.3)",
+          "minimum": 1,
+          "title": "Profondeur Gaps",
           "type": "integer"
         }
       },

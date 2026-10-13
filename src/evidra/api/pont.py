@@ -137,7 +137,7 @@ def contexte_depuis_rapport(
         if nom == "validate":
             return OutilValider(memoires)
         if nom == "report":
-            return OutilRapport(memoires)
+            return OutilRapport(memoires, limite_section=directive.output.limite_section)
         if nom == "ingest":
             return getattr(rapport, "ingest", None)
         return None

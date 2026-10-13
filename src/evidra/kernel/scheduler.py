@@ -110,7 +110,11 @@ class Scheduler:
         return RapportTick(self.tick, tuple(recus), tuple(depasses), duree)
 
     def boucler(self, arret: threading.Event, delai: float = 0.05) -> None:
-        """Boucle jusqu'au signal (arrêt propre : plus aucun tick après)."""
+        """Boucle jusqu'au signal (arrêt propre : plus aucun tick après).
+
+        Repli générique du noyau (stdlib, sans directive) : le SA passe
+        toujours sa valeur (`Boucle` ← `Budgets.attente_boucle_s`, I9).
+        """
         while not arret.is_set():
             self.tour(delai)
 

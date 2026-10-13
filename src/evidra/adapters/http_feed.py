@@ -40,11 +40,10 @@ except ImportError:  # moteur absent : repli timeout httpx direct
 
 log = logging.getLogger("evidra.adapters.http_feed")
 
-_BACKOFF_PLAFOND_S = 300.0
 
-
-def _delai_backoff(echecs: int) -> float:
-    return min(_BACKOFF_PLAFOND_S, 2.0 ** min(max(echecs, 1), 8))
+def _delai_backoff(echecs: int, plafond_s: float) -> float:
+    """Backoff exponentiel (base 2, exposant ≤ 8 : forme algorithmique, pas un réglage)."""
+    return min(plafond_s, 2.0 ** min(max(echecs, 1), 8))
 
 
 def _texte_entree(entree: Mapping[str, Any]) -> str:
@@ -83,17 +82,30 @@ class AdaptateurFlux:
         self,
         urls: Sequence[str] | None = None,
         *,
-        timeout_s: float = 5.0,
+        timeout_s: float | None = None,
+        backoff_plafond_s: float | None = None,
         canal: str = "http_feed",
         etag_store: MutableMapping[str, Any] | None = None,
     ) -> None:
+        """`timeout_s`/`backoff_plafond_s=None` ⇒ canoniques directive (`Budgets`, I9)."""
+        from evidra.directive.schema import backoff_plafond_defaut, timeout_http_defaut
+
+        delai = timeout_http_defaut() if timeout_s is None else timeout_s
+        plafond = backoff_plafond_defaut() if backoff_plafond_s is None else backoff_plafond_s
         if (
-            isinstance(timeout_s, bool)
-            or not isinstance(timeout_s, (int, float))
-            or not math.isfinite(float(timeout_s))
-            or float(timeout_s) <= 0
+            isinstance(delai, bool)
+            or not isinstance(delai, (int, float))
+            or not math.isfinite(float(delai))
+            or float(delai) <= 0
         ):
             raise ValueError(f"timeout invalide : {timeout_s!r}")
+        if (
+            isinstance(plafond, bool)
+            or not isinstance(plafond, (int, float))
+            or not math.isfinite(float(plafond))
+            or float(plafond) <= 0
+        ):
+            raise ValueError(f"plafond backoff invalide : {backoff_plafond_s!r}")
         if urls is None:
             validees: tuple[str, ...] = ()
         elif isinstance(urls, (str, bytes)) or not isinstance(urls, Sequence):
@@ -108,7 +120,8 @@ class AdaptateurFlux:
                 ):
                     raise ValueError(f"url invalide : {url!r}")
         self._urls = validees
-        self._timeout_s = float(timeout_s)
+        self._timeout_s = float(delai)
+        self._plafond_backoff = float(plafond)
         self.canal = canal
         self._cache: MutableMapping[str, Any] = etag_store if etag_store is not None else {}
         self._etat: set[str] = set()
@@ -249,4 +262,4 @@ class AdaptateurFlux:
     def _armer_backoff(self, url: str) -> None:
         echecs = self._echecs.get(url, 0) + 1
         self._echecs[url] = echecs
-        self._prochain_essai[url] = time.monotonic() + _delai_backoff(echecs)
+        self._prochain_essai[url] = time.monotonic() + _delai_backoff(echecs, self._plafond_backoff)

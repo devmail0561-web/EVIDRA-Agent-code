@@ -20,6 +20,9 @@ from pathlib import Path
 
 _LOG = logging.getLogger(__name__)
 
+BUDGET_DEFAUT_LACUNES = 10.0
+"""Budget par défaut des tâches P4 créées par `evidra lacunes` ([provisoire], I9)."""
+
 
 def main(argv: list[str] | None = None) -> int:
     """Point d'entrée `evidra` : dispatch, 0 ok / 1 erreur / 2 refus d'ingest."""
@@ -94,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     lacunes.add_argument("--data-dir", required=True)
     lacunes.add_argument("--domaine", required=True)
     lacunes.add_argument("--directive", required=True)
-    lacunes.add_argument("--budget", type=float, default=10.0)
+    lacunes.add_argument("--budget", type=float, default=BUDGET_DEFAUT_LACUNES)
     lacunes.add_argument("--deadline", required=False, default=None)
     lacunes.set_defaults(fonction=_cmd_lacunes)
 

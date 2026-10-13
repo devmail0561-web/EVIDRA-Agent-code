@@ -25,7 +25,6 @@ from evidra.tools._requetes_rust import iri_pour, preuves_pour
 from evidra.util import garde
 
 Interroger = Callable[..., dict[str, Any]]
-PROFONDEUR_CHAINE = 1
 
 _LOG = logging.getLogger(__name__)
 
@@ -57,12 +56,14 @@ class OutilLacunes:
         *,
         interroger: Interroger | None = None,
         timeout_s: float | None = None,
+        profondeur: int | None = None,
     ) -> None:
-        from evidra.directive.schema import timeout_travailleur_defaut
+        from evidra.directive.schema import profondeur_gaps_defaut, timeout_travailleur_defaut
 
         self._memoires = memoires
         self._interroger = interroger if interroger is not None else interroger_rust
         self._timeout_s = timeout_travailleur_defaut() if timeout_s is None else timeout_s
+        self._profondeur = profondeur_gaps_defaut() if profondeur is None else profondeur
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
         """Lacunes sourcées d'une chaîne surveillée ; jamais levée."""
@@ -87,7 +88,7 @@ class OutilLacunes:
         decoupe = decouper(
             memo.index,
             chaine,
-            profondeur=PROFONDEUR_CHAINE,
+            profondeur=self._profondeur,
             max_noeuds=MAX_NOEUDS,
             max_aretes=MAX_ARETES,
         )

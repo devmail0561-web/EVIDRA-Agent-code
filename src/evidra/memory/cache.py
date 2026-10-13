@@ -19,10 +19,13 @@ from collections.abc import Hashable
 class CacheResultats:
     """Cache de résultats de requêtes par label (un par domaine, via `Memoire`)."""
 
-    def __init__(self, taille_max: int = 1024) -> None:
-        if taille_max < 1:
+    def __init__(self, taille_max: int | None = None) -> None:
+        from evidra.directive.schema import cache_taille_max_defaut
+
+        borne = cache_taille_max_defaut() if taille_max is None else taille_max
+        if borne < 1:
             raise ValueError(f"taille_max >= 1 exigée : {taille_max}")
-        self._taille_max = taille_max
+        self._taille_max = borne
         self._entrees: OrderedDict[tuple[str, str, Hashable], tuple[str, ...]] = OrderedDict()
         self._etiquettes: dict[str, set[tuple[str, str, Hashable]]] = {}
         self.hits = 0

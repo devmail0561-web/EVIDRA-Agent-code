@@ -40,28 +40,37 @@ INJONCTIONS = (
 )
 
 SCHEMAS_INTERNES = frozenset({"doc", "agent", "api", "derived", "file", "http", "https"})
+"""Schémas de `ref` résolvables sans réseau (vocabulaire des refs SA, spec T9.4)."""
 
 
-def detecter_instruction(texte: str) -> str | None:
-    """Injonction adressée au SA ? Motif `instruction` ou `None`."""
+def detecter_instruction(
+    texte: str, injonctions: tuple[str, ...] | list[str] | None = None
+) -> str | None:
+    """Injonction adressée au SA ? Motif `instruction` ou `None`.
+
+    `injonctions=None` ⇒ liste canonique `INJONCTIONS` (arbitraire + protocole
+    T9.4, calibrée sur le corpus T9.7) ; passer une liste explicite pour
+    tester ou durcir sans toucher au code.
+    """
     if not isinstance(texte, str):
         return None
     bas = texte.casefold()
-    for injonction in INJONCTIONS:
+    for injonction in INJONCTIONS if injonctions is None else injonctions:
         if injonction in bas:
             return "instruction"
     return None
 
 
-def ref_resolvable(ref: str) -> bool:
+def ref_resolvable(ref: str, schemes: frozenset[str] | set[str] | None = None) -> bool:
     """`ref` résolvable au moment de l'ingestion (pas de réseau ici)."""
+    autorises = SCHEMAS_INTERNES if schemes is None else schemes
     if not isinstance(ref, str) or not ref:
         return False
     try:
         decoupe = urlparse(ref)
     except ValueError:
         return False
-    if decoupe.scheme not in SCHEMAS_INTERNES:
+    if decoupe.scheme not in autorises:
         return False
     if decoupe.scheme == "file":
         try:
@@ -73,9 +82,9 @@ def ref_resolvable(ref: str) -> bool:
     return True
 
 
-def detecter_provenance(ref: str) -> str | None:
+def detecter_provenance(ref: str, schemes: frozenset[str] | set[str] | None = None) -> str | None:
     """`provenance_forgee` si `ref` non résolvable, sinon `None`."""
-    return None if ref_resolvable(ref) else "provenance_forgee"
+    return None if ref_resolvable(ref, schemes) else "provenance_forgee"
 
 
 def contradiction_sans_preuve(croyance_etablie: bool, preuve_fournie: bool) -> bool:
@@ -88,14 +97,19 @@ def saturation_atteinte(compte: int, plafond: int) -> bool:
     return compte >= plafond
 
 
-def analyser(texte: str, ref: str) -> list[str]:
+def analyser(
+    texte: str,
+    ref: str,
+    injonctions: tuple[str, ...] | list[str] | None = None,
+    schemes: frozenset[str] | set[str] | None = None,
+) -> list[str]:
     """Motifs du document, dans l'ordre (`[]` = propre) ; jamais levée."""
     try:
         motifs = []
-        instruction = detecter_instruction(texte)
+        instruction = detecter_instruction(texte, injonctions)
         if instruction is not None:
             motifs.append(instruction)
-        provenance = detecter_provenance(ref)
+        provenance = detecter_provenance(ref, schemes)
         if provenance is not None:
             motifs.append(provenance)
         return motifs

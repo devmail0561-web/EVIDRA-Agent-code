@@ -191,7 +191,11 @@ def demarrer(
 
     data_dir.mkdir(parents=True, exist_ok=True)
     try:
-        magasin = Magasin(data_dir)
+        magasin = Magasin(
+            data_dir,
+            batch_lignes=directive.budgets.fsync_batch_lignes,
+            batch_ms=directive.budgets.fsync_batch_ms,
+        )
     except StoreError as exc:
         raise DemarrageError(f"verrou : {exc}") from None
     try:
@@ -231,6 +235,7 @@ def demarrer(
             surveillant=surveillant,
             horloge=tic,
             alerteur=_fabrique_alerteur(registres, magasin),
+            attente_s=directive.budgets.attente_boucle_s,
         )
         phases["boucle"] = {
             "reprise_taches": len([t for t in registres.taches() if t.startswith("task:")])
@@ -325,6 +330,7 @@ def _memoires_domaines(magasin: Magasin, directive: Directive) -> dict[str, Memo
     seuils = (directive.quality.seuils_tiers[0], directive.quality.seuils_tiers[1])
     n_confirmee = directive.seuils_provisoires.n_confirmation
     limite_repli = directive.quality.limite_repli_lexical
+    cache_taille = directive.budgets.cache_taille_max
     memoires: dict[str, Memoire] = {}
     for nom in noms:
         cle = f"domains/{nom}"
@@ -333,10 +339,10 @@ def _memoires_domaines(magasin: Magasin, directive: Directive) -> dict[str, Memo
         except StoreError:
             charge = None
         if charge is None:
-            memoires[nom] = Memoire(nom, seuils, n_confirmee, limite_repli)
+            memoires[nom] = Memoire(nom, seuils, n_confirmee, limite_repli, cache_taille)
         else:
             memoire, _ignores = memoire_depuis_etat(
-                nom, charge.etat, seuils, n_confirmee, limite_repli
+                nom, charge.etat, seuils, n_confirmee, limite_repli, cache_taille
             )
             memoires[nom] = memoire
     return memoires

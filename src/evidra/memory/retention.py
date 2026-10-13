@@ -41,7 +41,7 @@ def candidates(
         except (TypeError, ValueError):
             continue
         try:
-            age_jours = (maintenant - date).total_seconds() / 86400.0
+            age_jours = (maintenant - date).total_seconds() / 86400.0  # s/jour (constante physique)
         except TypeError:
             continue
         if age_jours > delai:

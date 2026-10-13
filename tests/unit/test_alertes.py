@@ -14,7 +14,7 @@ from evidra.kernel.manifest import manifest_from_plugin
 from evidra.memory.envelope import CirCore, Provenance
 from evidra.memory.memoire import Memoire
 from evidra.memory.registres import Registres
-from evidra.memory.sources import SeuilsSources
+from evidra.memory.sources import seuils_sources_defaut
 from evidra.memory.store import Magasin
 from evidra.monitor.alerts import doit_emettre
 from evidra.tools.alert import OutilAlert
@@ -76,7 +76,7 @@ def _outil(tmp_path: Path, magasin: Magasin, motifs: list | None = None) -> Outi
         Registres(magasin),
         ["ransomware"] if motifs is None else motifs,
         0.80,
-        SeuilsSources(),
+        seuils_sources_defaut(),
         tmp_path / "alerts.jsonl",
         lambda: "2026-01-01T00:00:00+00:00",
     )

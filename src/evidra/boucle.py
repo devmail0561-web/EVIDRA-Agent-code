@@ -68,7 +68,10 @@ class Boucle:
         surveillant: Surveillant | None = None,
         horloge: Callable[[], str] | None = None,
         alerteur: Callable[[], tuple[str, ...]] | None = None,
+        attente_s: float | None = None,
     ) -> None:
+        from evidra.directive.schema import attente_boucle_defaut
+
         self._domaine = domaine
         self._ordonnanceur = ordonnanceur
         self._magasin = magasin
@@ -77,6 +80,7 @@ class Boucle:
         self._surveillant = surveillant
         self._horloge = horloge
         self._alerteur = alerteur
+        self._attente_s = attente_s if attente_s is not None else attente_boucle_defaut()
         self._alertes_max: int | None = None
         self._politique = Policy()
         self._hash_directive = surveillant.empreinte_courante() if surveillant is not None else ""
@@ -136,12 +140,16 @@ class Boucle:
         finally:
             self._dans_tick = False
 
-    def boucler(self, arret: threading.Event, delai: float = 0.05) -> None:
-        """Boucle jusqu'au signal (`arret.wait` : réveil immédiat, pas de spin)."""
+    def boucler(self, arret: threading.Event, delai: float | None = None) -> None:
+        """Boucle jusqu'au signal (`arret.wait` : réveil immédiat, pas de spin).
+
+        `delai=None` ⇒ attente directive (`Budgets.attente_boucle_s`, I9).
+        """
+        attente = self._attente_s if delai is None else delai
         while not arret.is_set():
             self.tick()
             if not arret.is_set():
-                arret.wait(delai)
+                arret.wait(attente)
 
     def deposer(self, niveau: Priorite, effet: Effet):
         """Dépose un événement externe (API, T8.1) ; `Future` résolu au tick."""

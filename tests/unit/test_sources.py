@@ -18,6 +18,7 @@ from evidra.memory.sources import (
     SeuilsSources,
     bilan,
     fiabilite,
+    seuils_sources_defaut,
     signale,
     taux_confirmation,
     taux_contradiction,
@@ -27,7 +28,7 @@ from evidra.tools.ingest import OutilIngest, Seuils
 
 
 def _seuils() -> SeuilsSources:
-    return SeuilsSources()
+    return seuils_sources_defaut()
 
 
 def test_formule_spec() -> None:
@@ -69,7 +70,7 @@ def test_signal_basculement_suspect() -> None:
 
 def test_seuils_suivent_schema() -> None:
     p = Provisoire()
-    assert SeuilsSources() == SeuilsSources(
+    assert seuils_sources_defaut() == SeuilsSources(
         poids_confirmation=p.poids_confirmation,
         n_min=p.n_min_source,
         seuil_confiance=p.seuil_confiance_source,

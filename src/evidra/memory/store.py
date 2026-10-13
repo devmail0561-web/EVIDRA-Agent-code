@@ -139,8 +139,21 @@ class StoreError(Exception):
 class Magasin:
     """Implémente le Protocol `Store` : multiplexeur de streams persistés."""
 
-    def __init__(self, racine: Path) -> None:
+    def __init__(
+        self,
+        racine: Path,
+        *,
+        batch_lignes: int | None = None,
+        batch_ms: float | None = None,
+    ) -> None:
+        """`batch_*=None` ⇒ défauts canoniques de la directive (`Budgets.fsync_*`, I9).
+
+        Le démarrage (`demarrage`) passe les valeurs effectives ; les CLI
+        ponctuels et les tests s'en remettent au canonique.
+        """
         self._racine = racine
+        self._batch_lignes = batch_lignes
+        self._batch_ms = batch_ms
         racine.mkdir(parents=True, exist_ok=True)
         self._verrou = FileLock(str(racine / "sa.lock"))
         try:
@@ -180,7 +193,12 @@ class Magasin:
                 raise StoreError(str(exc)) from None
             dossier.mkdir(parents=True, exist_ok=True)
             try:
-                journal = WAL(dossier / "wal.jsonl", verrouiller=False)
+                journal = WAL(
+                    dossier / "wal.jsonl",
+                    verrouiller=False,
+                    batch_lignes=self._batch_lignes,
+                    batch_ms=self._batch_ms,
+                )
             except WALError as exc:
                 raise StoreError(str(exc)) from None
             self._journaux[cle] = journal

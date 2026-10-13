@@ -21,14 +21,34 @@ from typing import Any
 
 @dataclass(frozen=True, slots=True)
 class SeuilsSources:
-    """Seuils effectifs (extraits de la directive, testables sans disque)."""
+    """Seuils effectifs (extraits de la directive, testables sans disque).
 
-    poids_confirmation: float = 0.7
-    n_min: int = 5
-    seuil_confiance: float = 0.80
-    plafond_contradiction: float = 0.05
-    seuil_suspect: float = 0.10
-    plancher_surveillee: float = 0.60
+    Sans défaut : construire via `seuils_sources_defaut()` (canonique,
+    `Provisoire`) ou `seuils_sources_directive()` (démarrage) — jamais de
+    littéraux ici (I9, double source interdite).
+    """
+
+    poids_confirmation: float
+    n_min: int
+    seuil_confiance: float
+    plafond_contradiction: float
+    seuil_suspect: float
+    plancher_surveillee: float
+
+
+def seuils_sources_defaut() -> SeuilsSources:
+    """Seuils canoniques (source unique : `Provisoire`, I9)."""
+    from evidra.directive.schema import Provisoire
+
+    prov = Provisoire()
+    return SeuilsSources(
+        poids_confirmation=prov.poids_confirmation,
+        n_min=prov.n_min_source,
+        seuil_confiance=prov.seuil_confiance_source,
+        plafond_contradiction=prov.plafond_contradiction,
+        seuil_suspect=prov.seuil_suspect,
+        plancher_surveillee=prov.plancher_surveillee,
+    )
 
 
 @dataclass(frozen=True, slots=True)

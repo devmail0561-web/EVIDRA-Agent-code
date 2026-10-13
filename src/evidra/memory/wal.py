@@ -72,16 +72,25 @@ class WAL:
         chemin: Path,
         *,
         dossier: Path | None = None,
-        batch_lignes: int = 100,
-        batch_ms: float = 1000.0,
+        batch_lignes: int | None = None,
+        batch_ms: float | None = None,
         delai_verrou: float = 0.0,
         seq_depart: int = 0,
         verrouiller: bool = True,
     ) -> None:
+        """`batch_*=None` ⇒ défauts canoniques de la directive (`Budgets`, I9).
+
+        `delai_verrou=0.0` = fail-fast (sémantique, pas un réglage : deux
+        instances sur un WAL = refus immédiat, jamais d'attente).
+        """
+        from evidra.directive.schema import fsync_batch_lignes_defaut, fsync_batch_ms_defaut
+
         self._chemin = chemin
         self._dossier = dossier if dossier is not None else chemin.parent
-        self._batch_lignes = batch_lignes
-        self._batch_ms = batch_ms
+        lignes = batch_lignes if batch_lignes is not None else fsync_batch_lignes_defaut()
+        delai = batch_ms if batch_ms is not None else fsync_batch_ms_defaut()
+        self._batch_lignes = lignes
+        self._batch_ms = delai
         self._verrou: FileLock | None = None
         if verrouiller:
             self._verrou = FileLock(str(self._dossier / "sa.lock"))

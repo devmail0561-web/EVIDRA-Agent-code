@@ -8,6 +8,7 @@ import ast
 from pathlib import Path
 
 from evidra.kernel.contracts import Status, ToolResult
+from evidra.memory.sources import seuils_sources_defaut
 from evidra.output.human import formater_humain
 from evidra.output.llm import formater_llm
 from evidra.security.egress import hote_autorise, verifier_egress
@@ -86,7 +87,6 @@ def test_egress_refuse_avant_envoi() -> None:
     import tempfile
 
     from evidra.memory.registres import Registres
-    from evidra.memory.sources import SeuilsSources
     from evidra.memory.store import Magasin
     from evidra.tools.alert import OutilAlert
 
@@ -96,7 +96,7 @@ def test_egress_refuse_avant_envoi() -> None:
             Registres(magasin),
             [],
             0.8,
-            SeuilsSources(),
+            seuils_sources_defaut(),
             Path(tempfile.mkdtemp()) / "a.jsonl",
             lambda: "t",
             endpoint="https://evil.example.org/hook",

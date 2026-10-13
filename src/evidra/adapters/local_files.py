@@ -31,6 +31,8 @@ from evidra.memory.envelope import CodeSpan, Span, TokenSpan
 log = logging.getLogger("evidra.adapters.local_files")
 
 MIMES = {".txt": "text/plain", ".md": "text/markdown", ".py": "text/x-python"}
+"""Types lus en texte (vocabulaire de l'adaptateur, le reste est sauté)."""
+
 EXCLUS = frozenset(
     {
         ".git",
@@ -44,6 +46,8 @@ EXCLUS = frozenset(
         ".pytest_cache",
     }
 )
+"""Caches VCS/outils jamais ingérés (politique de l'adaptateur ; de toute façon,
+tout segment caché `.*` est exclu par `_est_exclu`)."""
 
 
 def _est_exclu(chemin: Path, racine: Path) -> bool:

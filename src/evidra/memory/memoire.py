@@ -20,7 +20,7 @@ from collections.abc import Hashable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from evidra.directive.schema import n_confirmation_defaut
+from evidra.directive.schema import cache_taille_max_defaut, n_confirmation_defaut
 from evidra.memory.cache import CacheResultats
 from evidra.memory.envelope import (
     CirCore,
@@ -35,6 +35,11 @@ from evidra.memory.envelope import (
 )
 from evidra.memory.index import Index
 from evidra.memory.lifecycle import promouvoir, transition
+
+CANAUX_AGENTS = frozenset({"agent_push"})
+"""Canaux d'origine agent (spec T9.3 : seule leur confirmation ne libère pas la
+quarantaine — anti-Sybil). Nommé ici plutôt que comparé en littéral : tout
+nouvel adaptateur agent doit étendre cet ensemble (revue explicite)."""
 
 Triplet = tuple[str, str, str, str]
 
@@ -63,6 +68,7 @@ class Memoire:
         seuils: tuple[float, float] | None = None,
         n_confirmee: int | None = None,
         limite_repli: int | None = None,
+        cache_taille: int | None = None,
     ) -> None:
         self.domaine = domaine
         self._n_confirmee = n_confirmee if n_confirmee is not None else n_confirmation_defaut()
@@ -73,7 +79,9 @@ class Memoire:
         self.paires: dict[
             tuple[str, str, str], list[Triplet]
         ] = {}  # (domaine, src, dst) → triplets (verdicts O(1), T5.3)
-        self.cache = CacheResultats()  # requêtes répétées O(1), invalidé par topologie (T5.6)
+        self.cache = CacheResultats(
+            taille_max=cache_taille if cache_taille is not None else cache_taille_max_defaut()
+        )
 
     @property
     def seuil_confirmee(self) -> int:
@@ -112,7 +120,7 @@ class Memoire:
             entite = self.entites[triplet]
             confirmer(entite, candidat, horodatage=horodatage)  # extraction seule : accepté (I6)
             promouvoir(entite, n_confirmee=self._n_confirmee)  # T6.1 : statut suit le compte
-            if entite.quarantine is not None and channel != "agent_push":
+            if entite.quarantine is not None and channel not in CANAUX_AGENTS:
                 entite.quarantine = None  # T9.3 : seul un non-agent libère (anti-Sybil)
             self.vues.add(observation)
             return Issue("confirmation", entite, triplet, observation)
@@ -325,7 +333,8 @@ def memoire_depuis_etat(
     seuils: tuple[float, float] | None = None,
     n_confirmee: int | None = None,
     limite_repli: int | None = None,
+    cache_taille: int | None = None,
 ) -> tuple[Memoire, int]:
     """Rebuild : `(mémoire, ignorés)` — tolérant par capsule (I12)."""
-    memoire = Memoire(domaine, seuils, n_confirmee, limite_repli)
+    memoire = Memoire(domaine, seuils, n_confirmee, limite_repli, cache_taille)
     return memoire, memoire.reconstruire(etat)

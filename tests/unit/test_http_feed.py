@@ -44,10 +44,24 @@ def test_construction_conforme() -> None:
     assert manifest_from_plugin(AdaptateurFlux).requires_network is True
 
 
-@pytest.mark.parametrize("mauvais", [0, -1.0, float("nan"), float("inf"), "5", None, True])
+@pytest.mark.parametrize("mauvais", [0, -1.0, float("nan"), float("inf"), "5", True])
 def test_timeout_invalide_refuse(mauvais: Any) -> None:
     with pytest.raises(ValueError):
         AdaptateurFlux([URL], timeout_s=mauvais)
+
+
+def test_timeout_none_egale_defaut_directive() -> None:
+    from evidra.directive.schema import backoff_plafond_defaut, timeout_http_defaut
+
+    assert AdaptateurFlux([URL])._timeout_s == timeout_http_defaut()
+    assert AdaptateurFlux([URL], timeout_s=None)._timeout_s == timeout_http_defaut()
+    assert AdaptateurFlux([URL])._plafond_backoff == backoff_plafond_defaut()
+
+
+@pytest.mark.parametrize("mauvais", [0, -2.0, float("nan"), "300", True])
+def test_plafond_backoff_invalide_refuse(mauvais: Any) -> None:
+    with pytest.raises(ValueError):
+        AdaptateurFlux([URL], backoff_plafond_s=mauvais)
 
 
 @pytest.mark.parametrize("mauvaises", [[""], ["ftp://x"], "http://x", [123]])
