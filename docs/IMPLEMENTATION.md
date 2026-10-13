@@ -20,7 +20,7 @@
 | 9 — Sécurité/réseau | J9 ✅ | T9.1–T9.10 | Clos : plafonds, signatures, agent_push, détecteurs, quarantaine, corpus adversarial, http_feed, egress, rétention |
 | 10 | — | — | Non commencée (gatée B1–B4) |
 
-Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **460 tests**, tous verts.
+Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **463 tests**, tous verts.
 
 ## 2. Architecture réelle
 
@@ -277,3 +277,15 @@ Règle appliquée : aucun réglage de pilotage en littéral — source unique = 
 - Le plan §5 interdisait tout import `memory/` aux outils/adaptateurs ; constat : 9/9 outils lisent `memoire` (injectées, jamais de `store` direct — vérifié : aucun import `memory.store`/`Magasin` dans `tools/`), 3/3 adaptateurs n'importent qu'`envelope` (spans/CIR exigés par T3.2/T9.3).
 - Décision (amende §5, garde `tests/unit/test_frontiere_adapters.py`) : `envelope` partout (types purs) ; `memoire` aux outils en lecture injectée ; écritures via `ctx.store` seul (I3). Première rédaction de l'ADR contenait une clause fausse (adaptateurs « sans aucun import ») — réécrite après `grep` de vérification.
 - Compteur : **460 tests**. Dernier point reporté actionable soldé ; restent : nommage FR/EN (cosmétique), pin moteur non mergé (externe), T10.2+ (gatés B1–B3).
+
+## 26. Durcissement sécurité — 3 correctifs précis (post-audit, vérifiés)
+
+Audit complet (invariants + sécurité + robustesse + tests) : plusieurs findings étaient exagérés ou délibérés, pas des bugs. Trois retenus, chacun réglant un problème précis sans casser de fonctionnalité :
+
+- **`agent_push` — contrôles de sécurité hors `assert`** : sous `python -O`, `assert ok, motif` et `assert isinstance(...)` disparaissent ⇒ poussée pair forgée acceptée. Remplacés par des `if not ...: raise ValueError` (déjà captés par le `except` existant). Comportement observable inchangé hors `-O` (les motifs de drop restent `hmac_invalide`, `clé étrangère`, `ref manquante`, …).
+- **API `/ingest` — détection d'injection (I11)** : `effet_ingest_textes` dupliquait le pipeline F1 **sans** `detecteur_defaut`, contrairement à `traiter_document` (CLI/boucle). Câblé en amont : motif détecté ⇒ `quarantaine` posée à l'ingest (stockée, exclue des requêtes/CONFIRMED).
+- **`/directive` fail-closed (T8.3)** : `publier`/`retour` renvoient **401** si `autheur is None` (aucun `api.jetons`), au lieu du mode ouvert. Lecture/écriture restent ouvertes dev/dogfood ; seule la gouvernance est stricte.
+
+Écartés (documentés, non implémentés) : `can()` partout (ingest déjà gaté, read = défaut-autorisé, `alert` = moniteur interne dont l'egress est déjà whitelisté par `verifier_egress`), SSRF `http_feed` (adaptateur non câblé en prod — latent), échappement des labels de sortie (déjà quotés entre « » / champs JSON), liste `INJONCTIONS` (calibration T10 assumée).
+
+- Compteur : **463 tests**, offline 449 + 14 skipped, noyau 499/500, gardes vertes.

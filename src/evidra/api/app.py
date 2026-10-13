@@ -87,8 +87,8 @@ def creer_app(
 ) -> FastAPI:
     """Fabrique l'app ; `lifespan` fait tourner la boucle (T8.1).
 
-    `autheur=None` (aucun jeton) = routes ouvertes dev/dogfood (documenté) ;
-    sinon 401 sans jeton, 403 verbe insuffisant (T8.3).
+    `autheur=None` (aucun jeton) = routes lecture/écriture ouvertes dev/dogfood,
+    mais `/directive` (gouvernance) reste fail-closed : 401 (T8.3).
     """
     lecture = [Depends(exige(autheur, Verb.READ))]
     ecriture = [Depends(exige(autheur, Verb.INGEST))]
@@ -258,12 +258,15 @@ def _routes_directive(
         entree: DirectiveIn,
         authorization: str | None = Header(default=None),
     ) -> JSONResponse:
-        if autheur is not None:
-            if not entree.signature or ":" not in entree.signature:
-                return JSONResponse({"erreur": "signature directive invalide"}, status_code=403)
-            cle_id, sig = entree.signature.split(":", 1)
-            if not autheur.verifier_signature(cle_id, canonique(entree.directive), sig):
-                return JSONResponse({"erreur": "signature directive invalide"}, status_code=403)
+        if autheur is None:
+            return JSONResponse(
+                {"erreur": "authentification requise pour modifier la directive"}, status_code=401
+            )
+        if not entree.signature or ":" not in entree.signature:
+            return JSONResponse({"erreur": "signature directive invalide"}, status_code=403)
+        cle_id, sig = entree.signature.split(":", 1)
+        if not autheur.verifier_signature(cle_id, canonique(entree.directive), sig):
+            return JSONResponse({"erreur": "signature directive invalide"}, status_code=403)
         try:
             valider(entree.directive)
         except Exception as exc:  # noqa: BLE001 — fail-closed avant écriture
@@ -279,13 +282,16 @@ def _routes_directive(
         entree: RollbackIn,
         authorization: str | None = Header(default=None),
     ) -> JSONResponse:
-        if autheur is not None:
-            if not entree.signature or ":" not in entree.signature:
-                return JSONResponse({"erreur": "signature directive invalide"}, status_code=403)
-            cle_id, sig = entree.signature.split(":", 1)
-            corps = canonique({"rollback": True, "motif": entree.motif})
-            if not autheur.verifier_signature(cle_id, corps, sig):
-                return JSONResponse({"erreur": "signature directive invalide"}, status_code=403)
+        if autheur is None:
+            return JSONResponse(
+                {"erreur": "authentification requise pour modifier la directive"}, status_code=401
+            )
+        if not entree.signature or ":" not in entree.signature:
+            return JSONResponse({"erreur": "signature directive invalide"}, status_code=403)
+        cle_id, sig = entree.signature.split(":", 1)
+        corps = canonique({"rollback": True, "motif": entree.motif})
+        if not autheur.verifier_signature(cle_id, corps, sig):
+            return JSONResponse({"erreur": "signature directive invalide"}, status_code=403)
         precedent = app.state.directive_precedente
         if not precedent:
             return JSONResponse({"erreur": "aucune version précédente"}, status_code=409)

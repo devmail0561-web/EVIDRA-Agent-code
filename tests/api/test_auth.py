@@ -136,6 +136,23 @@ def test_directive_invalide_422(tmp_path: Path) -> None:
         assert client.post("/directive", json=bon, headers=_porteur(ECRITURE)).status_code == 422
 
 
+def test_directive_sans_autheur_401(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    directive = tmp_path / "directive.json"
+    directive.write_text(json.dumps({"agent_id": "t", "domain": "code"}), encoding="utf-8")
+    rapport = demarrer(data_dir=data, directive_path=directive)
+    assert rapport.boucle is not None
+    api = contexte_depuis_rapport(rapport, data)
+    assert api is not None
+    autheur = autheur_depuis_directive(charger(directive))
+    assert autheur is None
+    app = creer_app(rapport.boucle, api, autheur=autheur, directive_path=directive)
+    with TestClient(app) as client:
+        corps = {"directive": {"agent_id": "t", "domain": "code"}}
+        assert client.post("/directive", json=corps).status_code == 401
+        assert client.post("/directive/rollback", json={"motif": "x"}).status_code == 401
+
+
 def test_signer_verifier_unitaire() -> None:
     autheur = Autheur(empreintes=(), cles=(("k", "s3cr3t"),))
     assert autheur.verifier_signature("k", b"corps", signer("s3cr3t", b"corps")) is True

@@ -119,6 +119,30 @@ def test_rejets() -> None:
     ) == ["agent sans clé"]
 
 
+def test_cle_etrangere_et_ref_manquante() -> None:
+    agents = {"a1": _agent()}
+    cles = {"k1": SECRET}
+    kw = {
+        "domaine": "code",
+        "agents": agents,
+        "cles": cles,
+        "maintenant_iso": T1,
+        "nonces_vus": set(),
+    }
+    forge = dict(_envoi(_cir()))
+    forge["signature"] = dict(forge["signature"])
+    assert list(
+        ingerer_pousses(
+            [_doc(forge)], **{**kw, "agents": {"a1": _agent(cle_id="k2")}, "nonces_vus": set()}
+        )[1]
+    ) == ["clé étrangère"]
+    sans_ref = _cir()
+    sans_ref["provenance"] = {"ref": "", "span": "synthetic"}
+    assert list(ingerer_pousses([_doc(_envoi(sans_ref))], **{**kw, "nonces_vus": set()})[1]) == [
+        "ref manquante"
+    ]
+
+
 def _noyau_local(ref: str) -> CirCore:
     return CirCore(
         source="x",

@@ -124,7 +124,8 @@ def ingerer_pousses(
     for doc in docs:
         try:
             envoi = json.loads(doc.text)
-            assert isinstance(envoi, dict)
+            if not isinstance(envoi, dict):
+                raise ValueError("envoi non-objet")
             agent_id = str(envoi["agent_id"])
             agent = agents[agent_id]
             if not getattr(agent, "cle_id", ""):
@@ -140,11 +141,15 @@ def ingerer_pousses(
                 maintenant_iso=maintenant_iso,
                 nonces_vus=vus,
             )
-            assert ok, motif
-            assert isinstance(envoi.get("signature"), dict)
-            assert envoi["signature"].get("key_id") == agent.cle_id, "clé étrangère"
+            if not ok:
+                raise ValueError(motif)
+            if not isinstance(envoi.get("signature"), dict):
+                raise ValueError("signature non-objet")
+            if envoi["signature"].get("key_id") != agent.cle_id:
+                raise ValueError("clé étrangère")
             cir = envoi["cir"]
-            assert cir["provenance"]["ref"]
+            if not cir["provenance"]["ref"]:
+                raise ValueError("ref manquante")
             publie = cir["provenance"].get("published_at")
             noyau = CirCore(
                 source=str(cir["source"]),

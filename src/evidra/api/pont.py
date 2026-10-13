@@ -181,12 +181,22 @@ def effet_ingest_textes(
 
     def travail() -> ToolResult:
         from evidra.engine_bridge.provenance import envelopper, verifier, vers_noyaux
+        from evidra.ingestion import detecteur_defaut
 
         horodatage = datetime.now(UTC).isoformat()
         recu_ext = ctx.extraire(textes)
         cirs = recu_ext.payload.get("cirs")
         if not isinstance(cirs, list):
             return ToolResult(status=Status.FAILED, payload={"motif": "extraction illisible"})
+        motif_quarantaine: str | None = None
+        for i, texte in enumerate(textes):
+            try:
+                sonde = detecteur_defaut(texte, f"api://{horodatage}#{i}")
+            except Exception:  # noqa: BLE001 — détection best-effort, jamais bloquante
+                continue
+            if sonde:
+                motif_quarantaine = sonde
+                break
         noyaux = []
         for i, (texte, cir) in enumerate(zip(textes, cirs, strict=False)):
             try:
@@ -199,6 +209,9 @@ def effet_ingest_textes(
                 noyaux.extend(vers_noyaux(enrichi))
             except ValueError:
                 continue
-        return outil.run(ctx.ctx_memoire, {"noyaux": noyaux, "channel": canal})
+        args: dict[str, Any] = {"noyaux": noyaux, "channel": canal}
+        if motif_quarantaine is not None:
+            args["quarantaine"] = motif_quarantaine
+        return outil.run(ctx.ctx_memoire, args)
 
     return deposer_attendre(ctx, Priorite.P4, travail)
