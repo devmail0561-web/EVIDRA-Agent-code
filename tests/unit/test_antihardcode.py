@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from evidra.directive.schema import (
     alertes_rapport_max_defaut,
     attente_boucle_defaut,
@@ -114,6 +116,8 @@ def test_detecteurs_surchargeables() -> None:
 
 
 def test_flux_defauts_au_schema() -> None:
+    pytest.importorskip("feedparser")
+    pytest.importorskip("httpx")
     from evidra.adapters.http_feed import AdaptateurFlux
 
     flux = AdaptateurFlux([])
