@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-13T13:29:52.895652+00:00",
+  "validate_p99_50k": {
+    "p99_ms": 0.026,
+    "n": 50000.0,
+    "echantillons": 100.0
+  },
+  "causes_p99_100k": {
+    "p99_ms": 0.23,
+    "n": 100000.0,
+    "echantillons": 200.0
+  },
+  "cycle_noop": {
+    "mediane_ms": 0.028,
+    "max_ms": 0.071,
+    "ticks": 50.0
+  },
+  "confirmed_correct_ge_085": "non_mesure (gold-3000 B3 bloqué)",
+  "faux_unconfirmed_le_010": "non_mesure (gold-3000 B3 bloqué)",
+  "wal_sans_perte": "suite tests/fault/test_wal_crash.py (CI)",
+  "charge_72h": "protocole scripts/charge_72h.py (fumé 2 s en CI)"
+}

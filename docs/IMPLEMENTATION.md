@@ -258,3 +258,9 @@ Règle appliquée : aucun réglage de pilotage en littéral — source unique = 
 - **Runner** (`scripts/benchmark_agentique.py`, engine-free, ~0.1 s) : ingest vérité + quarantaine détecteurs, `validate` triplets structurés, présence des chaînes en mémoire, rappel quarantaine. Rapport daté `benchmarks/benchmark-agentique-2026-10-13.json` : **200/200 claims, 50/50 chaînes, 12/12 anomalies, 0 FP**, 1400 entités, ~9700 docs/s.
 - **Tests** (`tests/bench/test_agentique_mvp.py`, 4) : corpus figé, cohérence vérité, scores parfaits, déterminisme (2 passes identiques) + borne perf.
 - Compteur : **456 tests**. Restent gatés (B1–B3 : confiances non calibrées, checkpoint, gold-3000) : T10.2 corpus calibration, T10.3 balayage, T10.4 non-double-pondération, T10.5 SLO finaux, T10.6 modèles, T10.7 ouverture P3, T10.8 conversation.
+
+## 23. Phase 10 — SLO partiels T10.5 et checklist T10.7 (2026-10-13)
+
+- **T10.5 partiel** (`scripts/mesurer_slo_t10.py` → `benchmarks/slo-t10-partiel-2026-10-13.json`, mesuré, pas une cible) : `validate()` p99 **0.026 ms** (cible < 200 ms, 50k), `query_causes()` p99 **0.23 ms** (cible < 50 ms, 100k), cycle no-op médiane **0.028 ms** / max 0.071 ms (cible < 10 ms). Non mesurés (gold-3000 B3 bloqué) : CONFIRMED correct ≥ 0.85, faux UNCONFIRMED ≤ 0.10. Relèvent des suites CI dédiées : WAL sans perte (`tests/fault/test_wal_crash.py`), charge 72 h (`scripts/charge_72h.py`, fumé 2 s).
+- **T10.7 gate P3 — RESTE FERMÉE** : benchmark construit et vert ✅ (MVP synthétique T10.1 — pas le gold) ; `can()` adversarial ✅ (suite gate + corpus T9.7) ; budgets calibrés sur ≥ 100 cycles ❌ (défauts provisoires, T10.3 en attente) ; quarantaine prouvée en dogfood ⚠️ (tests + corpus verts, dogfood `code` sans hostile injecté). Ni `delegate`, ni sémantique, ni chaud avant T10.2–T10.4.
+- Compteur : **456 tests** (inchangé — scripts seuls).
