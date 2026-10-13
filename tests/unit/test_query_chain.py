@@ -4,8 +4,11 @@
 
 from __future__ import annotations
 
+import sys
 import tempfile
 from pathlib import Path
+
+import pytest
 
 from evidra.kernel.contracts import Context, Status, Tool
 from evidra.kernel.manifest import manifest_from_plugin
@@ -13,6 +16,12 @@ from evidra.memory.envelope import CirCore, Provenance
 from evidra.memory.memoire import Memoire
 from evidra.memory.store import Magasin
 from evidra.tools.query_chain import OutilChaine
+
+
+@pytest.fixture(autouse=True)
+def _binaire_gcn_present(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Requêtes Rust : `gcn` résolu (production) — le fake reçoit un chemin réel."""
+    monkeypatch.setenv("GCN_BIN", sys.executable)
 
 
 def _noyau(src: str, dst: str, ref: str = "doc://1", conf: float = 0.9) -> CirCore:

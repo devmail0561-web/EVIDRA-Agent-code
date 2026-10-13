@@ -68,7 +68,6 @@ class OutilChaine:
 
         self._memoires = memoires
         self._interroger = interroger if interroger is not None else interroger_chaine
-        self._binaire_requis = interroger is None
         self._timeout_s = timeout_travailleur_defaut() if timeout_s is None else timeout_s
 
     def run(self, ctx: Context, args: Mapping[str, Any]) -> ToolResult:
@@ -121,8 +120,8 @@ class OutilChaine:
                     "derives": [],
                 },
             )
-        binaire = trouver_binaire() if self._binaire_requis else ""
-        if binaire is None and self._binaire_requis:
+        binaire = trouver_binaire()
+        if binaire is None:
             return ToolResult(
                 status=Status.DEGRADE,
                 payload={
