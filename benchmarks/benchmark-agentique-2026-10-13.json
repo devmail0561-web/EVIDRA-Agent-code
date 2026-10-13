@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-13T13:24:59.981902+00:00",
+  "graine": 42,
+  "documents": 1012,
+  "entites": 1400,
+  "ingest": {
+    "ajoutees": 1400,
+    "confirmees": 100,
+    "idempotentes": 0,
+    "quarantaines": 12
+  },
+  "claims": {
+    "exactitude_confirmed": 1.0,
+    "exactitude_unconfirmed": 1.0,
+    "exactitude_contradicted": 1.0,
+    "exactitude_globale": 1.0,
+    "bons": 200,
+    "total": 200
+  },
+  "chaines": {
+    "trouvees": 50,
+    "total": 50
+  },
+  "flux": {
+    "anomalies": 12,
+    "anomalies_detectees": 12,
+    "rappel_quarantaine": 1.0,
+    "honnetes": 1000,
+    "faux_positifs": 0
+  },
+  "duree_s": 0.104,
+  "docs_s": 9723.8
+}

@@ -101,17 +101,18 @@ def _triplets_verite(hasard: random.Random) -> tuple[list[list[str]], list[list[
 
 
 def _documents(hasard: random.Random, triplets: list[list[str]]) -> list[dict[str, object]]:
-    """1000 documents (1–2 triplets chacun), étalés sur 24 h + 12 anomalies."""
+    """1000 documents (1–2 triplets), 24 h + 12 anomalies ; chaque triplet porté ≥ 1 fois."""
+    melanges = list(triplets)
+    hasard.shuffle(melanges)
     docs = []
+    slot = 0
     for i in range(1000):
-        porteur = triplets[(2 * i) % len(triplets)]
-        phrases = [f"{porteur[0]} {porteur[1]} {porteur[2]}."]
+        contenus = [melanges[slot % len(melanges)]]
+        slot += 1
         if i % 2 == 0:
-            second = triplets[(2 * i + 1) % len(triplets)]
-            phrases.append(f"{second[0]} {second[1]} {second[2]}.")
-            contenus = [porteur, second]
-        else:
-            contenus = [porteur]
+            contenus.append(melanges[slot % len(melanges)])
+            slot += 1
+        phrases = [f"{t[0]} {t[1]} {t[2]}." for t in contenus]
         heure = (i * 24) // 1000
         docs.append(
             {
@@ -123,6 +124,7 @@ def _documents(hasard: random.Random, triplets: list[list[str]]) -> list[dict[st
                 "anomalie": None,
             }
         )
+    assert slot >= len(melanges), "couverture vérité incomplète"
     for k in range(12):
         if k < 6:
             docs.append(

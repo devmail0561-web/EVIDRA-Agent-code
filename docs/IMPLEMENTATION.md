@@ -20,7 +20,7 @@
 | 9 — Sécurité/réseau | J9 ✅ | T9.1–T9.10 | Clos : plafonds, signatures, agent_push, détecteurs, quarantaine, corpus adversarial, http_feed, egress, rétention |
 | 10 | — | — | Non commencée (gatée B1–B4) |
 
-Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **452 tests**, tous verts.
+Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **456 tests**, tous verts.
 
 ## 2. Architecture réelle
 
@@ -251,3 +251,10 @@ Règle appliquée : aucun réglage de pilotage en littéral — source unique = 
 - **Surchargeables sans schéma** (protocole, pas pilotage) : `content.py` (`detecter_instruction`/`analyser`/`ref_resolvable` acceptent des listes explicites), `CANAUX_AGENTS` nommé en `memoire.py` (revue exigée à tout nouvel adaptateur agent), `cli --budget` et `arbitrage_cli` échéance 7 j nommés + registre I9 (défauts d'invocation, surchargeables par args), `LONGUEUR_REGEX_MAX=200` nommé + registre.
 - **Assumés explicitement** (pas du pilotage) : `CostHint(ms=…)` déclaratifs par plugin (le scheduler ne les consomme pas) ; `delai_verrou=0.0`/`acquire(timeout=0.0)` fail-fast ; `0.0/1.0` bornes et identités (`confiance=1.0` produit vide) ; `86400.0` (s/jour, constante physique) ; `[:12]`/`[:200]` troncatures de présentation ; codes HTTP (protocole) ; `budget=16` reason (valeur prescrite §T3.5 du plan) ; `MAX_*`/`PROFONDEUR` sous-graphe (constatés moteur) ; `OPPOSES`/`INJONCTIONS`/`SCHEMAS`/`MIMES`/`EXCLUS`/`VERBES` (vocabulaires/tables spec, nommés, testés) ; `FENETRE_S=300`/`SEUIL_QUARANTAINE=3` (valeurs prescrites par le plan, statut `spec`) ; `--port/--hote` (ergonomie d'invocation) ; scripts `benchmarks/` (protocoles de mesure, pas du SA) ; `depuis_revisions=1` (annotation informative, pas un seuil) ; `JetonApi.empreinte min 16` (garde anti-coquille, pas un seuil de sécurité).
 - Registre I9 : 9 constantes (retraits : backoff, gaps, report ; ajouts : cli, arbitrage_cli, schema-regex). Compteur : **452 tests**, noyau 499/500, offline 439 + 13 skipped.
+
+## 22. Phase 10 — benchmark agentique MVP (T10.1 ; calibration T10.2+ toujours gatée B1–B3)
+
+- **Corpus** (`scripts/generer_benchmark_agentique.py` → `benchmarks/agentique-mvp.json`, 308 Ko, graine 42, déterministe octet pour octet) : 1012 documents CTI (24 h + 12 anomalies sans triplets), 1400 triplets vérité (50 chaînes A→B→C + aléatoires, relations `cause`/`prevent`/`enable`/`block`), 200 claims (100 CONFIRMED / 60 UNCONFIRMED / 40 CONTRADICTED, cohérence vérifiée en test). Leçons : espace initial 800 < 1400 (boucle infinie) → 4 relations ; distribution initiale ne couvrait que 1000/1400 triplets → dealing séquentiel avec assert de couverture ; injonctions recopiées → import canonique `security.content` (revue §21).
+- **Runner** (`scripts/benchmark_agentique.py`, engine-free, ~0.1 s) : ingest vérité + quarantaine détecteurs, `validate` triplets structurés, présence des chaînes en mémoire, rappel quarantaine. Rapport daté `benchmarks/benchmark-agentique-2026-10-13.json` : **200/200 claims, 50/50 chaînes, 12/12 anomalies, 0 FP**, 1400 entités, ~9700 docs/s.
+- **Tests** (`tests/bench/test_agentique_mvp.py`, 4) : corpus figé, cohérence vérité, scores parfaits, déterminisme (2 passes identiques) + borne perf.
+- Compteur : **456 tests**. Restent gatés (B1–B3 : confiances non calibrées, checkpoint, gold-3000) : T10.2 corpus calibration, T10.3 balayage, T10.4 non-double-pondération, T10.5 SLO finaux, T10.6 modèles, T10.7 ouverture P3, T10.8 conversation.
