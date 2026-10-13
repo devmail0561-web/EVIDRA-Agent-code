@@ -8,13 +8,15 @@ import json
 from types import SimpleNamespace
 from typing import Any
 
-import httpx
 import pytest
 
-from evidra.adapters import http_feed
-from evidra.adapters.http_feed import AdaptateurFlux
-from evidra.kernel.contracts import Adapter, RawDoc
-from evidra.kernel.manifest import manifest_from_plugin
+httpx = pytest.importorskip("httpx")
+pytest.importorskip("feedparser")
+
+from evidra.adapters import http_feed  # noqa: E402
+from evidra.adapters.http_feed import AdaptateurFlux  # noqa: E402
+from evidra.kernel.contracts import Adapter, RawDoc  # noqa: E402
+from evidra.kernel.manifest import manifest_from_plugin  # noqa: E402
 
 URL = "http://example.com/flux.xml"
 
