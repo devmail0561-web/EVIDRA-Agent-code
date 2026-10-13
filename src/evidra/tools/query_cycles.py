@@ -97,7 +97,7 @@ class OutilCycles:
                 status=Status.OK,
                 payload={"cycles": [], "note": "aucune arête à portée", "tronque": tronque},
             )
-        binaire = trouver_binaire()
+        binaire = trouver_binaire() if self._binaire_requis else ""
         if binaire is None and self._binaire_requis:
             return ToolResult(
                 status=Status.DEGRADE,

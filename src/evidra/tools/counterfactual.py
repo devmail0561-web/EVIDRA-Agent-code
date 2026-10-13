@@ -116,7 +116,7 @@ class OutilContrefactuel:
                     "tronque": decoupe.tronque,
                 },
             )
-        binaire = trouver_binaire()
+        binaire = trouver_binaire() if self._binaire_requis else ""
         if binaire is None and self._binaire_requis:
             return ToolResult(
                 status=Status.DEGRADE,
