@@ -69,8 +69,9 @@ class Boucle:
         horloge: Callable[[], str] | None = None,
         alerteur: Callable[[], tuple[str, ...]] | None = None,
         attente_s: float | None = None,
+        file_max: int | None = None,
     ) -> None:
-        from evidra.directive.schema import attente_boucle_defaut
+        from evidra.directive.schema import attente_boucle_defaut, file_max_defaut
 
         self._domaine = domaine
         self._ordonnanceur = ordonnanceur
@@ -81,6 +82,9 @@ class Boucle:
         self._horloge = horloge
         self._alerteur = alerteur
         self._attente_s = attente_s if attente_s is not None else attente_boucle_defaut()
+        self._file_max = file_max if file_max is not None else file_max_defaut()
+        self._en_attente = 0
+        self._verrou_file = threading.Lock()
         self._alertes_max: int | None = None
         self._politique = Policy()
         self._hash_directive = surveillant.empreinte_courante() if surveillant is not None else ""
@@ -152,8 +156,33 @@ class Boucle:
                 arret.wait(attente)
 
     def deposer(self, niveau: Priorite, effet: Effet):
-        """Dépose un événement externe (API, T8.1) ; `Future` résolu au tick."""
-        return self._ordonnanceur.deposer(niveau, effet)
+        """Dépose un événement externe (API, T8.1) ; `Future` résolu au tick.
+
+        File bornée (`Budgets.file_max`, I9) : saturée ⇒ `Future` déjà résolu
+        en `DEGRADE` (`file saturee`, jamais d'attente ni de croissance
+        mémoire). Compteur décrémenté à la résolution (thread-safe).
+        """
+        from concurrent.futures import Future
+
+        with self._verrou_file:
+            if self._en_attente >= self._file_max:
+                _LOG.warning("file d'événements saturée (%d), dépôt refusé", self._file_max)
+                refuse: Future[ToolResult] = Future()
+                refuse.set_result(
+                    ToolResult(
+                        status=Status.DEGRADE, payload={"motif": "file saturee", "saturee": True}
+                    )
+                )
+                return refuse
+            self._en_attente += 1
+        futur = self._ordonnanceur.deposer(niveau, effet)
+
+        def _liberer(termine: Future[ToolResult]) -> None:
+            with self._verrou_file:
+                self._en_attente -= 1
+
+        futur.add_done_callback(_liberer)
+        return futur
 
     def _tiede(self) -> bool:
         gardien = self._surveillant
@@ -172,6 +201,7 @@ class Boucle:
         )
         self._politique = directive.permissions.en_politique()
         self._alertes_max = directive.monitoring.alertes_rapport_max
+        self._file_max = directive.budgets.file_max
         if changee:
             self._hash_directive = gardien.empreinte_courante()
             flux = f"domains/{self._domaine}"

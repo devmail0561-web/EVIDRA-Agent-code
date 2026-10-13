@@ -60,6 +60,9 @@ class Budgets(_Base):
     cache_taille_max: int = Field(
         default=1024, ge=1, description="[provisoire] entrées max du cache requêtes LRU (T5.6)"
     )
+    file_max: int = Field(
+        default=1000, ge=1, description="[provisoire] événements externes en attente max (API)"
+    )
 
 
 class PermissionDirective(_Base):
@@ -247,6 +250,11 @@ def fsync_batch_ms_defaut() -> float:
 def cache_taille_max_defaut() -> int:
     """Taille canonique du cache LRU (source unique : `Budgets`, I9)."""
     return int(Budgets.model_fields["cache_taille_max"].default)
+
+
+def file_max_defaut() -> int:
+    """File d'événements canonique (source unique : `Budgets`, I9)."""
+    return int(Budgets.model_fields["file_max"].default)
 
 
 def profondeur_gaps_defaut() -> int:

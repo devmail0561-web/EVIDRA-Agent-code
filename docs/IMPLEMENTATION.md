@@ -20,7 +20,7 @@
 | 9 — Sécurité/réseau | J9 ✅ | T9.1–T9.10 | Clos : plafonds, signatures, agent_push, détecteurs, quarantaine, corpus adversarial, http_feed, egress, rétention |
 | 10 | — | — | Non commencée (gatée B1–B4) |
 
-Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **456 tests**, tous verts.
+Gate permanent (chaque tâche) : `ruff check` + `ruff format --check` + `mypy` (kernel, memory) + `pytest` (+ `--disable-socket`) + `lint-imports` + SLOC < 500. Compteur : **458 tests**, tous verts.
 
 ## 2. Architecture réelle
 
@@ -264,3 +264,10 @@ Règle appliquée : aucun réglage de pilotage en littéral — source unique = 
 - **T10.5 partiel** (`scripts/mesurer_slo_t10.py` → `benchmarks/slo-t10-partiel-2026-10-13.json`, mesuré, pas une cible) : `validate()` p99 **0.026 ms** (cible < 200 ms, 50k), `query_causes()` p99 **0.23 ms** (cible < 50 ms, 100k), cycle no-op médiane **0.028 ms** / max 0.071 ms (cible < 10 ms). Non mesurés (gold-3000 B3 bloqué) : CONFIRMED correct ≥ 0.85, faux UNCONFIRMED ≤ 0.10. Relèvent des suites CI dédiées : WAL sans perte (`tests/fault/test_wal_crash.py`), charge 72 h (`scripts/charge_72h.py`, fumé 2 s).
 - **T10.7 gate P3 — RESTE FERMÉE** : benchmark construit et vert ✅ (MVP synthétique T10.1 — pas le gold) ; `can()` adversarial ✅ (suite gate + corpus T9.7) ; budgets calibrés sur ≥ 100 cycles ❌ (défauts provisoires, T10.3 en attente) ; quarantaine prouvée en dogfood ⚠️ (tests + corpus verts, dogfood `code` sans hostile injecté). Ni `delegate`, ni sémantique, ni chaud avant T10.2–T10.4.
 - Compteur : **456 tests** (inchangé — scripts seuls).
+
+## 24. Durcissement — file d'événements bornée (reporté de l'audit, fait)
+
+- **Problème** : file `Scheduler` non bornée (audit : « théorique, reporté à l'API ») — une rafale HTTP pouvait faire croître la file + `Future` sans limite. Corrigé hors noyau (I2 intact, 499/500) : `Boucle.deposer()` compte les en-attente (thread-safe) et refuse au-delà de `Budgets.file_max` (`[provisoire]`, 1000) par `Future` déjà résolu en `DEGRADE` (`file saturee`, jamais d'attente) ; compteur décrémenté à la résolution ; `_tiede` recharge la borne (directive tiède) ; `demarrage` la câble. Côté API : `degrade` → 200 + warnings (shed visible, pas de 429 — contrat `reponse()` inchangé).
+- **Tests** : saturée ⇒ degrade immédiat sans dépôt + compteur libéré au tick ; défaut == canonique directive.
+- **Écarté** : `evidra etat` branché sur `etat.py` — lecture hors-ligne incompatible avec le verrou `Magasin` (refus si l'agent tourne) ; l'API `/status` + `evidra status` couvrent le besoin. `etat.py` reste le verbe en-processus (T5.9).
+- Compteur : **458 tests**, noyau 499/500, offline 445 + 13 skipped.

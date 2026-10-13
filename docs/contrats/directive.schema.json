@@ -192,6 +192,13 @@
           "minimum": 1,
           "title": "Cache Taille Max",
           "type": "integer"
+        },
+        "file_max": {
+          "default": 1000,
+          "description": "[provisoire] événements externes en attente max (API)",
+          "minimum": 1,
+          "title": "File Max",
+          "type": "integer"
         }
       },
       "title": "Budgets",

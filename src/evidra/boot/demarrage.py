@@ -236,6 +236,7 @@ def demarrer(
             horloge=tic,
             alerteur=_fabrique_alerteur(registres, magasin),
             attente_s=directive.budgets.attente_boucle_s,
+            file_max=directive.budgets.file_max,
         )
         phases["boucle"] = {
             "reprise_taches": len([t for t in registres.taches() if t.startswith("task:")])

@@ -30,6 +30,7 @@ def _montage(
     directive: dict | None = None,
     outils: dict | None = None,
     budgets: Budgets | None = None,
+    file_max: int | None = None,
 ) -> tuple[Boucle, Magasin, Registres, Scheduler]:
     magasin = Magasin(tmp_path / "data")
     registres = Registres(magasin)
@@ -49,6 +50,7 @@ def _montage(
         outils=outils if outils is not None else {},
         surveillant=surveillant,
         horloge=lambda: "2026-10-12T00:00:00+00:00",
+        file_max=file_max,
     )
     return boucle, magasin, registres, ordonnanceur
 
@@ -181,3 +183,24 @@ def test_boucle_tick_noop_rapide() -> None:
         duree_ms = (time.perf_counter() - debut) * 1000.0
     assert rapport.recus == ()
     assert duree_ms < 10.0  # T4.7 : cycle sans condition < 10 ms mesuré
+
+
+def test_file_saturee_degrade_sans_croissance(tmp_path: Path) -> None:
+    boucle, _magasin, _registres, ordonnanceur = _montage(tmp_path, file_max=1)
+    premier = boucle.deposer(Priorite.P3, lambda: _ok("un"))
+    assert not premier.done()
+    sature = boucle.deposer(Priorite.P3, lambda: _ok("deux"))
+    assert sature.done()
+    recu = sature.result(timeout=1.0)
+    assert recu.status is Status.DEGRADE and recu.payload.get("saturee") is True
+    assert boucle._en_attente == 1  # le refus n'a rien déposé
+    boucle.tick()
+    assert boucle._en_attente == 0  # résolu ⇒ compteur libéré
+    assert premier.done() and premier.result(timeout=1.0).payload.get("marque") == "un"
+
+
+def test_file_max_defaut_directive(tmp_path: Path) -> None:
+    from evidra.directive.schema import file_max_defaut
+
+    boucle, _magasin, _registres, _ordonnanceur = _montage(tmp_path)
+    assert boucle._file_max == file_max_defaut()
